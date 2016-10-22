@@ -15,11 +15,11 @@ namespace Steganography
         public Form1()
         {
             InitializeComponent();
-            Image img = Image.FromFile(@"D:\2.JPG");
+            Image img = Image.FromFile(@"D:\1.JPG");
 
             Bitmap bmp = new Bitmap(img);
 
-            LSBEncryptor enc = new LSBEncryptor("Text", "123", bmp);
+            LSBEncryptor enc = new LSBEncryptor("HELLLLLO", "123", bmp);
             bmp = enc.Encrypt();
             enc.Decrypt();
             this.picBoxResult.Image = bmp;

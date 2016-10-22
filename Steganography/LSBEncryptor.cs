@@ -28,19 +28,19 @@ namespace Steganography
         public Bitmap Encrypt()
         {
             int bitCount = 0;
-            int byteNumber = 0;
+            int byteIndex = 0;
 
-            byte[] check = new byte[message.Length];
+           
 
             for (int i = 0; i < bmp.Width; i++)
             {
                 for(int j = 0; j < bmp.Height; j++)
                 {
-                    if (byteNumber == this.message.Length - 1)
+                    if (byteIndex == this.message.Length - 1)
                         return this.bmp;
-                    if (bitCount % 8 == 0 && bitCount != 0)
+                    if (bitCount == 8)
                     {
-                        byteNumber++;
+                        byteIndex++;
                         
                         bitCount = 0;
                     }
@@ -53,16 +53,10 @@ namespace Steganography
                     for (int k = 0; k < 2; k++)
                     {
                         //Если бит поднят у сообщения то поднимает его в пикселе иначе опускаем
-                        if ((this.message[byteNumber] & 1 << bitCount) != 0)
-                        {
-                            argb |= 1 << k;
-                            check[byteNumber] = (byte)(check[byteNumber] | 1 << bitCount);
-                        }
+                        if ((this.message[byteIndex] & 1 << bitCount) != 0)
+                            argb |= 1 << k;                          
                         else
-                        {
                             argb &= ~(1 << k);
-                            
-                        }
                         bitCount++;
                     }
 
@@ -81,31 +75,23 @@ namespace Steganography
             byte[] msg = new byte[this.message.Length];
 
             int bitCount = 0;
-            int byteNumber = 0;
+            int byteIndex = 0;
 
             for (int i = 0; i < bmp.Width; i++)
             {
                 for(int j = 0; j < bmp.Height; j++)
                 {
 
-                    if (byteNumber == this.message.Length - 1)
+                    if (byteIndex == this.message.Length - 1)
                     {
-
                         MessageBox.Show(Encoding.Unicode.GetString(msg));
-
-
                         return;
                     }
-                    if (bitCount % 8 == 0 && bitCount != 0)
+                    if (bitCount == 8)
                     {
-                        byteNumber++;
-
+                        byteIndex++;
                         bitCount = 0;
                     }
-
-                  
-                    if (bitCount % 8 == 0 && bitCount != 0)
-                        byteNumber++;
 
                     Color color = bmp.GetPixel(i, j);
 
@@ -114,7 +100,7 @@ namespace Steganography
                     for (int k = 0; k < 2; k++)
                     {
                         if ((argb & 1 << k) != 0)
-                            msg[byteNumber] = (byte)(msg[byteNumber] | 1 << bitCount);
+                            msg[byteIndex] = (byte)(msg[byteIndex] | 1 << bitCount);
                         bitCount++;
                     }
                 }
