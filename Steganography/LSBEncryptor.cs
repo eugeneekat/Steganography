@@ -25,7 +25,7 @@ namespace Steganography
             this.bmp = bmp;          
         }
 
-        public void Encrypt()
+        public Bitmap Encrypt()
         {
             int bitCount = 0;
             int byteNumber = 0;
@@ -37,7 +37,7 @@ namespace Steganography
                 for(int j = 0; j < bmp.Height; j++)
                 {
                     if (byteNumber == this.message.Length - 1)
-                        return;
+                        return this.bmp;
                     if (bitCount % 8 == 0 && bitCount != 0)
                     {
                         byteNumber++;
@@ -71,6 +71,9 @@ namespace Steganography
                     
                 }
             }
+
+            return this.bmp;
+            
         }
 
         public void Decrypt()
