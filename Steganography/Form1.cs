@@ -15,6 +15,29 @@ namespace Steganography
         public Form1()
         {
             InitializeComponent();
+            Image img = Image.FromFile(@"D:\1.JPG");
+
+            Bitmap bmp = new Bitmap(img);
+
+            LSBEncryptor enc = new LSBEncryptor("Hello", "123", bmp);
+            enc.Encrypt();
+            enc.Decrypt();
+            this.picBoxResult.Image = bmp;
         }
+
+        //Open File
+        private void btnFileChoose_Click(object sender, EventArgs e)
+        {
+            //try
+            //{
+            //    this.picBoxSource.Load(this.txtBoxFilePath.Text);
+            //}
+            //catch(Exception ex)
+            //{
+            //    MessageBox.Show(ex.Message, "Error");
+            //}
+        }
+
+
     }
 }
