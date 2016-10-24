@@ -11,12 +11,9 @@ namespace Steganography
 {
     class LSBEncryptor
     {
-        enum LSBLevel { One = 1, Two = 2, Four = 4, Eight = 8};
 
         byte[] message = null;
-        byte[] password = null;
-
-        LSBLevel level = LSBLevel.Eight;
+       
         
         Bitmap bmp = null;
 
@@ -25,28 +22,21 @@ namespace Steganography
             MD5 md = MD5.Create();
             
             this.message = Encoding.Unicode.GetBytes(message);
-            this.password = md.ComputeHash(Encoding.ASCII.GetBytes(password));
+            
             this.bmp = bmp;          
         }
 
         public Bitmap Encrypt()
         {
-            Point p = new Point();
-            this.InsertToImage(this.bmp, Encoding.ASCII.GetBytes("EE"), ref p);
-            this.InsertToImage(this.bmp, this.password, ref p);
-            this.InsertToImage(this.bmp, this.message, ref p);
+            Point p = new Point(0,0);
+            this.InsertToImage(bmp, this.message, ref p);
             return this.bmp;
         }
 
         public void Decrypt()
         {
             Point p = new Point(0,0);
-            
-            
-
-            byte[] msg = this.OutFromImage(this.bmp, Encoding.ASCII.GetByteCount("EE"), ref p);
-            
-            byte[] password = this.OutFromImage(this.bmp, this.password.Length, ref p);
+           
 
             byte[] message = this.OutFromImage(this.bmp, this.message.Length,  ref p);
 
@@ -62,46 +52,51 @@ namespace Steganography
         /// <param name="position">Reference point of start position(every step change point)</param>
         protected void InsertToImage(Bitmap image, byte[] source, ref Point position)
         {
+            //Check correct coordinates
             if (position.X > image.Width || position.X < 0 ||
                position.Y > image.Height || position.Y < 0)
                 throw new IndexOutOfRangeException();
 
+            //Set Counts for bits and index for bytes
             int bitCount = 0;
             int byteIndex = 0;
 
             for (; position.Y < image.Height; position.Y++)
             {
                 for(; position.X < image.Width; position.X++)
-                {
-                   
-                    //Если последний индекс байта и счетчик бита равен 8 - значит конец
-                    if (byteIndex == source.Length - 1 && bitCount == 8)
+                {  
+                    //Insert byte array completed                 
+                    if (byteIndex == source.Length)
                         return;
-
-                    if (bitCount == 8)
-                    {
-                        bitCount = 0;
-                        byteIndex++;
-                    }
-
+                    //Get color from pixel
                     Color color = image.GetPixel(position.X, position.Y);
 
-                    int argb = color.ToArgb();
+                    //Get array 4 bytes of: Alpha, Red, Green and Blue
+                    byte[] argb = BitConverter.GetBytes(color.ToArgb());
 
-                    for (int k = 0; k < (int)this.level; k++)
+                    //Change 2 least significant bit for each color and alpha to our source byte
+                    for (int i = 0; i < argb.Length; i++)
                     {
-                        //Если бит поднят у сообщения то поднимает его в пикселе иначе опускаем
-                        if ((source[byteIndex] & 1 << bitCount) != 0)
-                            argb |= 1 << k;
-                        else
-                            argb &= ~(1 << k);
-                        bitCount++;
+                        for (int j = 0; j < 2; j++)
+                        {
+                            //Test a bit (if bit is set)
+                            if ((source[byteIndex] & 1 << bitCount) != 0)
+                                //Set bit in argb
+                                argb[i] = (byte)(argb[i] | 1 << j);                                
+                            //Else clear bit in argb
+                            else
+                                argb[i] = (byte)(argb[i] & ~(1 << j));
+                            bitCount++;
+                        }
                     }
-
-                    color = Color.FromArgb(argb);
-
-                    image.SetPixel(position.X, position.Y, color);                   
+                    //Byte completed
+                    bitCount = 0;
+                    byteIndex++;
+                    //Get new color from argb and set into image                    
+                    color = Color.FromArgb(BitConverter.ToInt32(argb, 0));
+                    image.SetPixel(position.X, position.Y, color);                                                    
                 }
+                //New pixel row
                 position.X = 0;
             }
             if (byteIndex != source.Length)
@@ -122,6 +117,7 @@ namespace Steganography
                position.Y > image.Height || position.Y < 0)
                 throw new IndexOutOfRangeException();
 
+            //Allocate memory(all bits clear)
             byte[] stream = new byte[length];
 
             int bitCount = 0;
@@ -131,27 +127,25 @@ namespace Steganography
             {
                 for(; position.X < image.Width; position.X++)
                 {
-                    //Если последний индекс байта и счетчик бита равен 8 - значит конец
-                    if (byteIndex == length - 1 && bitCount == 8)
+                    if (byteIndex == length)
                         return stream;
-                    if(bitCount == 8)
-                    {
-                        bitCount = 0;
-                        byteIndex++;
-                    }
                     Color color = bmp.GetPixel(position.X, position.Y);
-                    int argb = color.ToArgb();
-
-                    for (int k = 0; k < (int)this.level; k++)
+                    byte[] b = BitConverter.GetBytes(color.ToArgb());
+                    for (int i = 0; i < b.Length; i++)
                     {
-                        if ((argb & 1 << k) != 0)
-                            stream[byteIndex] = (byte)(stream[byteIndex] | 1 << bitCount);
-                        bitCount++;
+                        for (int j = 0; j < 2; j++)
+                        {
+                            //Test a bit (if bit is set - set bit in stream)
+                            if ((b[i] & 1 << j) != 0)
+                                stream[byteIndex] = (byte)(stream[byteIndex] | 1 << bitCount);                            
+                            bitCount++;
+                        }
                     }
+                    bitCount = 0;
+                    byteIndex++;
                 }
                 position.X = 0;
             }
-
             if (byteIndex != length - 1)
                 //Exception 
                 throw new OutOfMemoryException("");

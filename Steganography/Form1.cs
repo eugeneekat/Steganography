@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
 
 namespace Steganography
 {
@@ -15,14 +17,20 @@ namespace Steganography
         public Form1()
         {
             InitializeComponent();
-            Image img = Image.FromFile(@"1.JPG");
+            //Image img = Image.FromFile(@"3.jpg");
 
-            Bitmap bmp = new Bitmap(img);
+
+            //Bitmap bmp = new Bitmap(img);
+
+            Bitmap bmp = new Bitmap("5.bmp");
 
             LSBEncryptor enc = new LSBEncryptor("Hello", "123", bmp);
             bmp = enc.Encrypt();
+
             enc.Decrypt();
             this.picBoxResult.Image = bmp;
+            //bmp.Save(@"5.bmp");
+
         }
 
         //Open File
