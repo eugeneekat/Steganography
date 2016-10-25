@@ -17,17 +17,18 @@ namespace Steganography
         public Form1()
         {
             InitializeComponent();
-            //Image img = Image.FromFile(@"3.jpg");
+            
 
+            Bitmap bmp = new Bitmap(Image.FromFile(@"1.jpg"));
+            
+            
+            byte[] b1 = Encoding.Unicode.GetBytes("H");
+            LSBEncryptor.InsertToImage(bmp, b1, 0);
 
-            //Bitmap bmp = new Bitmap(img);
+          
 
-            Bitmap bmp = new Bitmap("5.bmp");
-
-            LSBEncryptor enc = new LSBEncryptor("Hello", "123", bmp);
-            bmp = enc.Encrypt();
-
-            enc.Decrypt();
+            byte [] result = LSBEncryptor.OutFromImage(bmp, b1.Length);
+            MessageBox.Show(Encoding.Unicode.GetString(result));
             this.picBoxResult.Image = bmp;
             //bmp.Save(@"5.bmp");
 
