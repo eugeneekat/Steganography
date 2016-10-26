@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using Encryptors;
+using EncryptionExtenstions;
 
 namespace Steganography
 {
@@ -20,18 +22,23 @@ namespace Steganography
             
 
             Bitmap bmp = new Bitmap(Image.FromFile(@"1.jpg"));
+            BmpSteg st = new BmpSteg();
+            char[] msg = new char[(bmp.Height * bmp.Width)/2 - 3];
+            for(int i = 0; i < msg.Length; i++)
+            {
+                msg[i] = 'H';
+            }
+            //byte[] source = Encoding.Unicode.GetBytes("Hello");
+            //source = ByteEncryptor.Xor.Encrypt(source, Encoding.Unicode.GetBytes("World"));
             
-            
-            byte[] b1 = Encoding.Unicode.GetBytes("H");
-            LSBEncryptor.InsertToImage(bmp, b1, 0);
+            st.InsertToImage(bmp, Encoding.Unicode.GetBytes(msg));      
+            bmp.Save(@"4.bmp");
 
-          
 
-            byte [] result = LSBEncryptor.OutFromImage(bmp, b1.Length);
-            MessageBox.Show(Encoding.Unicode.GetString(result));
-            this.picBoxResult.Image = bmp;
-            //bmp.Save(@"5.bmp");
-
+            Bitmap bmp2 = new Bitmap(@"4.bmp");
+            byte[] result = st.OutFromImage(bmp2);
+            //result = ByteEncryptor.Xor.Decrypt(source, Encoding.Unicode.GetBytes("World"));
+            string s = Encoding.Unicode.GetString(result);
         }
 
         //Open File
