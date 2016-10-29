@@ -28,7 +28,7 @@ namespace Steganography
                 throw new ArgumentException("Image is encoding now!", "image");
             //Insert makrer
             Insert(image, this.marker, 0);
-            //Insert length
+            //Insert length           
             Insert(image, BitConverter.GetBytes(source.Length), this.marker.Length);
             //Insert data
             Insert(image, source, this.marker.Length + sizeof(int));
