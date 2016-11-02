@@ -6,11 +6,118 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using System.IO;
+
 namespace Steganography
 {
     class BmpSteg
     {
-        protected byte [] marker = Encoding.ASCII.GetBytes("EE");
+        public byte [] marker = Encoding.ASCII.GetBytes("EE");
+
+        /// <summary>
+        /// Put simply text into image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="text">Text</param>
+        public virtual void PutText(Bitmap image, string text)
+        {
+            byte[] source = Encoding.Unicode.GetBytes(text);
+            if (!IsAvailableFreeSpace(image, source.Length))
+                throw new ArgumentOutOfRangeException("source", source.Length, "Target data size more than container size");
+            //Offset position
+            int position = 0;
+            //Insert marker
+            this.Insert(image, this.marker, position);
+            position += this.marker.Length;
+            //Insert size
+            this.Insert(image, BitConverter.GetBytes(source.Length), position);
+            position += sizeof(int);
+            //Insert source
+            this.Insert(image, source, position);
+        }
+
+        /// <summary>
+        /// Get Text data from image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <returns>Text data</returns>
+        public virtual string GetText(Bitmap image)
+        {
+            //Offset position
+            int position = 0;
+            //Check marker
+            if (!this.Extract(image, this.marker.Length, position).SequenceEqual(this.marker))
+                throw new ArgumentException("Image doesn't have a mark", "image");
+            position += this.marker.Length;
+            //Get size
+            int size = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            position += sizeof(int);
+            //Get and return message
+            return Encoding.Unicode.GetString(this.Extract(image, size, position));
+        }
+
+        public virtual void PutFile(Bitmap image, FileStream fs)
+        {
+            //Get extenstion
+            byte [] extension = Encoding.Unicode.GetBytes(Path.GetExtension(fs.Name));
+            
+            //Get total data size
+            long totalSize = this.marker.Length + sizeof(int) + extension.Length + sizeof(int) + fs.Length;
+            //Check
+            if (!IsAvailableFreeSpace(image, totalSize))
+                throw new ArgumentOutOfRangeException("fs", totalSize, "Target data size more than container size");
+
+            byte[] source = new byte[fs.Length];
+            fs.Read(source, 0, source.Length);
+
+            int position = 0;
+            //Put marker
+            this.Insert(image, this.marker, position);
+            position += marker.Length;
+
+            //Put extension size
+            this.Insert(image, BitConverter.GetBytes(extension.Length), position);
+            position += sizeof(int);
+
+            //Put extension
+            this.Insert(image, extension, position);
+            position += extension.Length;
+
+            //Put data size
+            this.Insert(image, BitConverter.GetBytes(source.Length), position);
+            position += sizeof(int);
+
+            //Put data
+            this.Insert(image, source, position);
+        }
+
+        public virtual FileStream GetFile(Bitmap image, string outputFileName)
+        {
+            int position = 0;
+            if (!this.Extract(image, this.marker.Length, position).SequenceEqual(this.marker))
+                throw new ArgumentException("Image doesn't have a mark", "image");
+            position += this.marker.Length;
+
+            //Get file extension length
+            int fileExtensionLength = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            position += sizeof(int);
+
+            //Get fileName
+            string fileExtension = Encoding.Unicode.GetString(this.Extract(image, fileExtensionLength, position));
+            position += fileExtensionLength;
+
+            //Get FileSize
+            int fileSize = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            position += sizeof(int);
+
+            //Create file
+            FileStream fs = new FileStream(outputFileName + fileExtension, FileMode.CreateNew, FileAccess.ReadWrite);
+            
+            //Write file
+            fs.Write(this.Extract(image, fileSize, position), 0, fileSize);
+            return fs;
+        }
+
 
         /// <summary>
         /// Insert in bitmap image byte array
@@ -93,7 +200,7 @@ namespace Steganography
         /// <param name="length">Data byte array length</param>
         /// <returns>True- available, False - not available</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        protected bool IsAvailableFreeSpace(Bitmap image, int length)
+        protected bool IsAvailableFreeSpace(Bitmap image, long length)
         {
             if (image == null)
                 throw new ArgumentNullException("image", "Image null argument");
