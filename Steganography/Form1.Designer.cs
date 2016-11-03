@@ -35,7 +35,7 @@
             this.txtBoxPassword = new System.Windows.Forms.TextBox();
             this.checkBoxEncrypt = new System.Windows.Forms.CheckBox();
             this.progressBarEncode = new System.Windows.Forms.ProgressBar();
-            this.groupData = new System.Windows.Forms.GroupBox();
+            this.groupInputData = new System.Windows.Forms.GroupBox();
             this.txtBoxOutputFileName = new System.Windows.Forms.TextBox();
             this.lblOutputFile = new System.Windows.Forms.Label();
             this.progressBarCapacity = new System.Windows.Forms.ProgressBar();
@@ -52,13 +52,15 @@
             this.radioBtnDecode = new System.Windows.Forms.RadioButton();
             this.folderBrowserDialogOutput = new System.Windows.Forms.FolderBrowserDialog();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.groupOutputData = new System.Windows.Forms.GroupBox();
             this.groupProps.SuspendLayout();
-            this.groupData.SuspendLayout();
+            this.groupInputData.SuspendLayout();
+            this.groupOutputData.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnStart
             // 
-            this.btnStart.Location = new System.Drawing.Point(267, 460);
+            this.btnStart.Location = new System.Drawing.Point(267, 483);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(75, 40);
             this.btnStart.TabIndex = 2;
@@ -71,7 +73,7 @@
             this.groupProps.Controls.Add(this.lblPassword);
             this.groupProps.Controls.Add(this.txtBoxPassword);
             this.groupProps.Controls.Add(this.checkBoxEncrypt);
-            this.groupProps.Location = new System.Drawing.Point(12, 404);
+            this.groupProps.Location = new System.Drawing.Point(12, 427);
             this.groupProps.Name = "groupProps";
             this.groupProps.Size = new System.Drawing.Size(330, 50);
             this.groupProps.TabIndex = 1;
@@ -98,6 +100,7 @@
             // checkBoxEncrypt
             // 
             this.checkBoxEncrypt.AutoSize = true;
+            this.checkBoxEncrypt.Enabled = false;
             this.checkBoxEncrypt.Location = new System.Drawing.Point(9, 19);
             this.checkBoxEncrypt.Name = "checkBoxEncrypt";
             this.checkBoxEncrypt.Size = new System.Drawing.Size(76, 17);
@@ -108,35 +111,32 @@
             // 
             // progressBarEncode
             // 
-            this.progressBarEncode.Location = new System.Drawing.Point(80, 460);
+            this.progressBarEncode.Location = new System.Drawing.Point(80, 483);
             this.progressBarEncode.Name = "progressBarEncode";
             this.progressBarEncode.Size = new System.Drawing.Size(181, 40);
             this.progressBarEncode.TabIndex = 11;
             // 
-            // groupData
+            // groupInputData
             // 
-            this.groupData.Controls.Add(this.txtBoxOutputFileName);
-            this.groupData.Controls.Add(this.lblOutputFile);
-            this.groupData.Controls.Add(this.progressBarCapacity);
-            this.groupData.Controls.Add(this.txtBoxOutputFolder);
-            this.groupData.Controls.Add(this.lblOutputFolder);
-            this.groupData.Controls.Add(this.txtBoxText);
-            this.groupData.Controls.Add(this.txtBoxFile);
-            this.groupData.Controls.Add(this.radioBtnText);
-            this.groupData.Controls.Add(this.radioBtnFile);
-            this.groupData.Controls.Add(this.lblData);
-            this.groupData.Controls.Add(this.lblInputImage);
-            this.groupData.Controls.Add(this.txtBoxInputImage);
-            this.groupData.Location = new System.Drawing.Point(12, 12);
-            this.groupData.Name = "groupData";
-            this.groupData.Size = new System.Drawing.Size(330, 386);
-            this.groupData.TabIndex = 0;
-            this.groupData.TabStop = false;
-            this.groupData.Text = "Data";
+            this.groupInputData.Controls.Add(this.lblInputImage);
+            this.groupInputData.Controls.Add(this.lblData);
+            this.groupInputData.Controls.Add(this.radioBtnFile);
+            this.groupInputData.Controls.Add(this.txtBoxInputImage);
+            this.groupInputData.Controls.Add(this.progressBarCapacity);
+            this.groupInputData.Controls.Add(this.radioBtnText);
+            this.groupInputData.Controls.Add(this.txtBoxFile);
+            this.groupInputData.Controls.Add(this.txtBoxText);
+            this.groupInputData.Location = new System.Drawing.Point(12, 12);
+            this.groupInputData.Name = "groupInputData";
+            this.groupInputData.Size = new System.Drawing.Size(330, 326);
+            this.groupInputData.TabIndex = 0;
+            this.groupInputData.TabStop = false;
+            this.groupInputData.Text = "Input Data";
             // 
             // txtBoxOutputFileName
             // 
-            this.txtBoxOutputFileName.Location = new System.Drawing.Point(114, 356);
+            this.txtBoxOutputFileName.Enabled = false;
+            this.txtBoxOutputFileName.Location = new System.Drawing.Point(113, 47);
             this.txtBoxOutputFileName.Name = "txtBoxOutputFileName";
             this.txtBoxOutputFileName.Size = new System.Drawing.Size(206, 20);
             this.txtBoxOutputFileName.TabIndex = 12;
@@ -144,7 +144,7 @@
             // lblOutputFile
             // 
             this.lblOutputFile.AutoSize = true;
-            this.lblOutputFile.Location = new System.Drawing.Point(6, 359);
+            this.lblOutputFile.Location = new System.Drawing.Point(5, 50);
             this.lblOutputFile.Name = "lblOutputFile";
             this.lblOutputFile.Size = new System.Drawing.Size(87, 13);
             this.lblOutputFile.TabIndex = 11;
@@ -160,7 +160,8 @@
             // 
             // txtBoxOutputFolder
             // 
-            this.txtBoxOutputFolder.Location = new System.Drawing.Point(114, 328);
+            this.txtBoxOutputFolder.Enabled = false;
+            this.txtBoxOutputFolder.Location = new System.Drawing.Point(113, 19);
             this.txtBoxOutputFolder.Name = "txtBoxOutputFolder";
             this.txtBoxOutputFolder.ReadOnly = true;
             this.txtBoxOutputFolder.Size = new System.Drawing.Size(206, 20);
@@ -170,7 +171,7 @@
             // lblOutputFolder
             // 
             this.lblOutputFolder.AutoSize = true;
-            this.lblOutputFolder.Location = new System.Drawing.Point(6, 331);
+            this.lblOutputFolder.Location = new System.Drawing.Point(5, 22);
             this.lblOutputFolder.Name = "lblOutputFolder";
             this.lblOutputFolder.Size = new System.Drawing.Size(87, 13);
             this.lblOutputFolder.TabIndex = 7;
@@ -190,16 +191,19 @@
             // 
             // txtBoxFile
             // 
+            this.txtBoxFile.Enabled = false;
             this.txtBoxFile.Location = new System.Drawing.Point(56, 71);
             this.txtBoxFile.Name = "txtBoxFile";
             this.txtBoxFile.ReadOnly = true;
             this.txtBoxFile.Size = new System.Drawing.Size(264, 20);
             this.txtBoxFile.TabIndex = 5;
+            this.txtBoxFile.TextChanged += new System.EventHandler(this.txtBoxFile_TextChanged);
             this.txtBoxFile.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtBoxFile_MouseDown);
             // 
             // radioBtnText
             // 
             this.radioBtnText.AutoSize = true;
+            this.radioBtnText.Enabled = false;
             this.radioBtnText.Location = new System.Drawing.Point(9, 97);
             this.radioBtnText.Name = "radioBtnText";
             this.radioBtnText.Size = new System.Drawing.Size(46, 17);
@@ -210,12 +214,11 @@
             // radioBtnFile
             // 
             this.radioBtnFile.AutoSize = true;
-            this.radioBtnFile.Checked = true;
+            this.radioBtnFile.Enabled = false;
             this.radioBtnFile.Location = new System.Drawing.Point(9, 72);
             this.radioBtnFile.Name = "radioBtnFile";
             this.radioBtnFile.Size = new System.Drawing.Size(41, 17);
             this.radioBtnFile.TabIndex = 3;
-            this.radioBtnFile.TabStop = true;
             this.radioBtnFile.Text = "File";
             this.radioBtnFile.UseVisualStyleBackColor = true;
             this.radioBtnFile.CheckedChanged += new System.EventHandler(this.radioBtnFile_CheckedChanged);
@@ -250,19 +253,19 @@
             // radioBtnEncode
             // 
             this.radioBtnEncode.AutoSize = true;
-            this.radioBtnEncode.Checked = true;
-            this.radioBtnEncode.Location = new System.Drawing.Point(12, 460);
+            this.radioBtnEncode.Enabled = false;
+            this.radioBtnEncode.Location = new System.Drawing.Point(12, 483);
             this.radioBtnEncode.Name = "radioBtnEncode";
             this.radioBtnEncode.Size = new System.Drawing.Size(62, 17);
             this.radioBtnEncode.TabIndex = 11;
-            this.radioBtnEncode.TabStop = true;
             this.radioBtnEncode.Text = "Encode";
             this.radioBtnEncode.UseVisualStyleBackColor = true;
             // 
             // radioBtnDecode
             // 
             this.radioBtnDecode.AutoSize = true;
-            this.radioBtnDecode.Location = new System.Drawing.Point(12, 483);
+            this.radioBtnDecode.Enabled = false;
+            this.radioBtnDecode.Location = new System.Drawing.Point(12, 506);
             this.radioBtnDecode.Name = "radioBtnDecode";
             this.radioBtnDecode.Size = new System.Drawing.Size(63, 17);
             this.radioBtnDecode.TabIndex = 12;
@@ -270,16 +273,30 @@
             this.radioBtnDecode.UseVisualStyleBackColor = true;
             this.radioBtnDecode.CheckedChanged += new System.EventHandler(this.radioBtnDecode_CheckedChanged);
             // 
+            // groupOutputData
+            // 
+            this.groupOutputData.Controls.Add(this.txtBoxOutputFolder);
+            this.groupOutputData.Controls.Add(this.txtBoxOutputFileName);
+            this.groupOutputData.Controls.Add(this.lblOutputFolder);
+            this.groupOutputData.Controls.Add(this.lblOutputFile);
+            this.groupOutputData.Location = new System.Drawing.Point(12, 344);
+            this.groupOutputData.Name = "groupOutputData";
+            this.groupOutputData.Size = new System.Drawing.Size(330, 77);
+            this.groupOutputData.TabIndex = 13;
+            this.groupOutputData.TabStop = false;
+            this.groupOutputData.Text = "Output data";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(354, 509);
+            this.ClientSize = new System.Drawing.Size(354, 537);
+            this.Controls.Add(this.groupOutputData);
             this.Controls.Add(this.radioBtnDecode);
             this.Controls.Add(this.radioBtnEncode);
             this.Controls.Add(this.progressBarEncode);
             this.Controls.Add(this.btnStart);
-            this.Controls.Add(this.groupData);
+            this.Controls.Add(this.groupInputData);
             this.Controls.Add(this.groupProps);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -287,8 +304,10 @@
             this.Text = "Form1";
             this.groupProps.ResumeLayout(false);
             this.groupProps.PerformLayout();
-            this.groupData.ResumeLayout(false);
-            this.groupData.PerformLayout();
+            this.groupInputData.ResumeLayout(false);
+            this.groupInputData.PerformLayout();
+            this.groupOutputData.ResumeLayout(false);
+            this.groupOutputData.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -302,7 +321,7 @@
         private System.Windows.Forms.TextBox txtBoxPassword;
         private System.Windows.Forms.CheckBox checkBoxEncrypt;
         private System.Windows.Forms.ProgressBar progressBarEncode;
-        private System.Windows.Forms.GroupBox groupData;
+        private System.Windows.Forms.GroupBox groupInputData;
         private System.Windows.Forms.ProgressBar progressBarCapacity;
         private System.Windows.Forms.TextBox txtBoxOutputFolder;
         private System.Windows.Forms.Label lblOutputFolder;
@@ -319,6 +338,7 @@
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
         private System.Windows.Forms.TextBox txtBoxOutputFileName;
         private System.Windows.Forms.Label lblOutputFile;
+        private System.Windows.Forms.GroupBox groupOutputData;
     }
 }
 
