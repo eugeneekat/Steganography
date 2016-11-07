@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using System.IO;
+using System.Threading;
 
 using Encryptors;
 using EncryptionExtenstions;
@@ -19,8 +20,12 @@ namespace Steganography
 {
     public partial class Form1 : Form
     {
+        //MD5 reserved size for encryption data
+        readonly int md5Size = MD5.Create().HashSize * 2;
         Bitmap bmp = null;
         BmpSteg seg = new BmpSteg();
+        
+        //Get aviable pixels for encode
         int? BmpPixelCount
         {
             get
@@ -28,26 +33,35 @@ namespace Steganography
                 if (this.bmp == null)
                     return null;
                 else
-                    return this.bmp.Width * this.bmp.Height - this.seg.marker.Length;                
-            }
-            set
-            {
-                this.BmpPixelCount = value;
+                    return this.bmp.Width * this.bmp.Height - this.seg.fileMarker.Length - md5Size;                
             }
         }
 
         FileStream file = null;
 
+        CancellationTokenSource source = new CancellationTokenSource();
+        CancellationToken token;
+
         public Form1()
         {
             InitializeComponent();
+            this.token = source.Token;
         }
         
         //CheckBox encrypt and textBoxEncrypt
         private void checkBoxEncrypt_CheckedChanged(object sender, EventArgs e)
         {
             this.txtBoxPassword.Enabled = this.checkBoxEncrypt.Checked;
+            
         }
+        
+        //Folder dialog for output folder
+        private void txtBoxOutputFolder_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (this.folderBrowserDialogOutput.ShowDialog() == DialogResult.OK)
+                this.txtBoxOutputFolder.Text = folderBrowserDialogOutput.SelectedPath;
+        }
+
 
         //Change control elements - File/Text
         private void radioBtnFile_CheckedChanged(object sender, EventArgs e)
@@ -91,7 +105,7 @@ namespace Steganography
                         button.Enabled = true;
                     foreach (TextBox textBox in this.groupOutputData.Controls.OfType<TextBox>())
                         textBox.Enabled = true;
-                    this.radioBtnFile.Checked = true;
+                    this.radioBtnFile.Checked = this.radioBtnEncode.Checked = true;
                 }
                 catch (Exception ex)
                 {
@@ -135,8 +149,8 @@ namespace Steganography
                 try
                 {
                     this.file = File.Open(this.openFileDialog.FileName, FileMode.Open, FileAccess.ReadWrite);
-                    //If image capacity less than opened file size - close file and generate exception
-                    if (this.progressBarCapacity.Maximum < this.file.Length)
+                    //If image capacity less than opened file size and file extension size - close file and generate exception
+                    if (this.progressBarCapacity.Maximum - Path.GetExtension(openFileDialog.FileName).Length < this.file.Length)
                     {
                         this.file.Close();
                         this.file = null;
@@ -156,111 +170,163 @@ namespace Steganography
         //Textbox Typing - change Capacity progressbar and block Encode/Decode interface when text empty
         private void txtBoxText_TextChanged(object sender, EventArgs e)
         {
-            this.radioBtnDecode.Enabled     = this.radioBtnEncode.Enabled = this.checkBoxEncrypt.Enabled = this.txtBoxText.TextLength > 0 ? true : false;
             this.progressBarCapacity.Value  = this.txtBoxText.Text.Length;
         }        
 
-        //Folder dialog for output folder choice
-        private void txtBoxOutputFolder_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (this.folderBrowserDialogOutput.ShowDialog() == DialogResult.OK)
-                this.txtBoxOutputFolder.Text = folderBrowserDialogOutput.SelectedPath;
-        }
-
-        //Block encode/decode interface when radiobutton selected file, but file not open
-        private void txtBoxFile_TextChanged(object sender, EventArgs e)
-        {
-            this.radioBtnEncode.Enabled = this.radioBtnDecode.Enabled = this.checkBoxEncrypt.Enabled = this.txtBoxFile.Text == string.Empty ? false : true;
-        }
+        
 
         //Start work
         private async void btnStart_Click(object sender, EventArgs e)
         {
+            //Input data validation
+            string validation = this.IsValidData();
+            if(validation != string.Empty)
+            {
+                MessageBox.Show(validation, "Error");
+                return;
+            }
+            //Prepare path for save
             string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
+            //Prepare file for save output result and temp file for encoding output result file
+            FileStream saveFile = null;
+            FileStream tempFile = null;
+
+
+            
+            try
+            {
+                //Encode
+                if (this.radioBtnEncode.Checked)
+                {
+                    //File
+                    if (this.radioBtnFile.Checked)
+                    {
+                        //Encrypt
+                        if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
+                        {
+                            //Get file name and extension
+                            string tmpPath = Path.GetFileName(this.file.Name);
+                            if (File.Exists(tmpPath))
+                            {
+                                MessageBox.Show(string.Format("Can't create temp file: {0} - file alreadyExist", tmpPath), "Error");
+                                return;
+                            }
+                            //Create temp file for encrypion
+                            tempFile = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite);
+                            //Async file in temp, encrypt file and PutFile into image
+
+                            await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
+                            await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
+                            await Task.Run(() => this.seg.PutFile(this.bmp, tempFile), this.token);
+                        }
+                        //Don't encrypt
+                        else
+                            await Task.Run(() => this.seg.PutFile(this.bmp, this.file, this.token));                          
+                    }
+                    //Text
+                    else
+                    {
+                        //Encrypt
+                        if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
+                            this.seg.PutText(this.bmp, this.EncryptionXorText(this.txtBoxText.Text, this.txtBoxPassword.Text));
+                        //Don't encrypt
+                        else
+                            this.seg.PutText(this.bmp, this.txtBoxText.Text);
+                    }
+                    //Save new bmp
+                    if(!this.token.IsCancellationRequested)
+                        this.bmp.Save(path);
+                }
+                //Decode
+                else
+                {
+                    this.bmp = new Bitmap(this.txtBoxInputImage.Text);
+                    //File
+                    if (this.txtBoxOutputFolder.Text != string.Empty)
+                    {
+                        //Async get file from bmp
+                        saveFile = await Task.Run(() => this.seg.GetFile(this.bmp, path, this.token), this.token);
+                        //Decrypt
+                        if (this.checkBoxEncrypt.Checked)
+                            await saveFile.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
+                    }
+                    //Text
+                    else
+                    {
+                        string outMessage = this.seg.GetText(this.bmp);
+                        //Decrypt
+                        if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
+                            outMessage = EncryptionXorText(outMessage, this.txtBoxPassword.Text);
+                        this.txtBoxText.Text = outMessage;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+            finally
+            {
+                if (saveFile != null)
+                {
+                    saveFile.Close();
+                    if (this.token.IsCancellationRequested)
+                        File.Delete(saveFile.Name);            
+                }
+                if (tempFile != null)
+                {
+                    tempFile.Close();
+                    File.Delete(tempFile.Name);
+                }
+                if (this.token.IsCancellationRequested)
+                    Application.Exit();
+            }
+        }
+
+        //Check input data
+        private string IsValidData()
+        {
+            if (!this.radioBtnEncode.Checked && !this.radioBtnDecode.Checked)
+                return "Select encode/decode";
             //Encode
             if (this.radioBtnEncode.Checked)
             {
                 //File
-                if (this.radioBtnFile.Checked)
+                if(this.radioBtnFile.Checked)
                 {
-                    //Encrypt
-                    if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
-                    {
-                        FileStream tmp = null;
-                        //Get file name and extension
-                        string tmpPath = Path.GetFileName(this.file.Name);
-                        if (File.Exists(tmpPath))
-                        {
-                            MessageBox.Show(string.Format("Can't create temp file: {0} - file alreadyExist", tmpPath), "Error");
-                            return;
-                        }
-                        try
-                        {
-                            //Create temp file for encrypion
-                            tmp = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite);
-                            //Async file in temp, encrypt file and PutFile into image
-                            await this.file.CopyToAsync(tmp);
-                            await tmp.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text));
-                            await Task.Run(() => this.seg.PutFile(this.bmp, tmp));
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message, "Error");
-                        }
-                        finally
-                        {
-                            if (tmp != null)
-                            {
-                                tmp.Close();
-                                File.Delete(tmp.Name);
-                            }
-                        }
-                    }
-                    //Don't encrypt
-                    else
-                        await Task.Run(() => this.seg.PutFile(this.bmp, this.file));
+                    if (this.txtBoxFile.Text == string.Empty)
+                        return "Select decoding file";
                 }
                 //Text
                 else
                 {
-                    this.seg.PutText(this.bmp, this.txtBoxText.Text);
-                }
-                this.bmp.Save(path);
+                    if(this.txtBoxText.Text == string.Empty)
+                        return "Enter text for encoding";
+                }                                 
+                if (this.txtBoxOutputFolder.Text == string.Empty || this.txtBoxOutputFileName.Text == string.Empty)
+                    return "Select output data - folder/file name";
             }
-            //Decode
-            else
+            return string.Empty;
+        }
+
+        //Helper method xor text encryption
+        private string EncryptionXorText(string text, string password)
+        {
+            byte[] encText      = Encoding.Unicode.GetBytes(text);
+            byte[] encPassword  = Encoding.Unicode.GetBytes(password);
+            ByteEncryptor.Xor.Encrypt(ref encText, encPassword);
+            return Encoding.Unicode.GetString(encText);
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {            
+            if (this.source.IsCancellationRequested == false)
             {
-                this.bmp = new Bitmap(this.openFileDialog.FileName);
-                //File
-                if (this.txtBoxOutputFolder.Text != string.Empty)
-                {
-                    FileStream fs = null;
-                    try
-                    {
-                        //Async get file from bmp
-                        fs = await Task.Run(() => this.seg.GetFile(this.bmp, path));
-                        //Decrypt
-                        if (this.checkBoxEncrypt.Checked)
-                            await fs.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text));
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "Error");
-                    }
-                    finally
-                    {
-                        if (fs != null)
-                        {
-                            fs.Close();
-                            File.Delete(fs.Name);
-                        }
-                    }
-                }
-                else
-                {
-                    this.txtBoxText.Text = this.seg.GetText(this.bmp);
-                }
+                e.Cancel = true;
+                this.source.Cancel(true);               
             }
+            else
+                e.Cancel = false;
         }
     }
 }

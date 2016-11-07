@@ -36,18 +36,18 @@
             this.checkBoxEncrypt = new System.Windows.Forms.CheckBox();
             this.progressBarEncode = new System.Windows.Forms.ProgressBar();
             this.groupInputData = new System.Windows.Forms.GroupBox();
+            this.lblInputImage = new System.Windows.Forms.Label();
+            this.lblData = new System.Windows.Forms.Label();
+            this.radioBtnFile = new System.Windows.Forms.RadioButton();
+            this.txtBoxInputImage = new System.Windows.Forms.TextBox();
+            this.progressBarCapacity = new System.Windows.Forms.ProgressBar();
+            this.radioBtnText = new System.Windows.Forms.RadioButton();
+            this.txtBoxFile = new System.Windows.Forms.TextBox();
+            this.txtBoxText = new System.Windows.Forms.TextBox();
             this.txtBoxOutputFileName = new System.Windows.Forms.TextBox();
             this.lblOutputFile = new System.Windows.Forms.Label();
-            this.progressBarCapacity = new System.Windows.Forms.ProgressBar();
             this.txtBoxOutputFolder = new System.Windows.Forms.TextBox();
             this.lblOutputFolder = new System.Windows.Forms.Label();
-            this.txtBoxText = new System.Windows.Forms.TextBox();
-            this.txtBoxFile = new System.Windows.Forms.TextBox();
-            this.radioBtnText = new System.Windows.Forms.RadioButton();
-            this.radioBtnFile = new System.Windows.Forms.RadioButton();
-            this.lblData = new System.Windows.Forms.Label();
-            this.lblInputImage = new System.Windows.Forms.Label();
-            this.txtBoxInputImage = new System.Windows.Forms.TextBox();
             this.radioBtnEncode = new System.Windows.Forms.RadioButton();
             this.radioBtnDecode = new System.Windows.Forms.RadioButton();
             this.folderBrowserDialogOutput = new System.Windows.Forms.FolderBrowserDialog();
@@ -100,7 +100,6 @@
             // checkBoxEncrypt
             // 
             this.checkBoxEncrypt.AutoSize = true;
-            this.checkBoxEncrypt.Enabled = false;
             this.checkBoxEncrypt.Location = new System.Drawing.Point(9, 19);
             this.checkBoxEncrypt.Name = "checkBoxEncrypt";
             this.checkBoxEncrypt.Size = new System.Drawing.Size(76, 17);
@@ -133,6 +132,86 @@
             this.groupInputData.TabStop = false;
             this.groupInputData.Text = "Input Data";
             // 
+            // lblInputImage
+            // 
+            this.lblInputImage.AutoSize = true;
+            this.lblInputImage.Location = new System.Drawing.Point(6, 16);
+            this.lblInputImage.Name = "lblInputImage";
+            this.lblInputImage.Size = new System.Drawing.Size(39, 13);
+            this.lblInputImage.TabIndex = 1;
+            this.lblInputImage.Text = "Image:";
+            // 
+            // lblData
+            // 
+            this.lblData.AutoSize = true;
+            this.lblData.Location = new System.Drawing.Point(6, 55);
+            this.lblData.Name = "lblData";
+            this.lblData.Size = new System.Drawing.Size(58, 13);
+            this.lblData.TabIndex = 2;
+            this.lblData.Text = "Input data:";
+            // 
+            // radioBtnFile
+            // 
+            this.radioBtnFile.AutoSize = true;
+            this.radioBtnFile.Enabled = false;
+            this.radioBtnFile.Location = new System.Drawing.Point(9, 72);
+            this.radioBtnFile.Name = "radioBtnFile";
+            this.radioBtnFile.Size = new System.Drawing.Size(41, 17);
+            this.radioBtnFile.TabIndex = 3;
+            this.radioBtnFile.Text = "File";
+            this.radioBtnFile.UseVisualStyleBackColor = true;
+            this.radioBtnFile.CheckedChanged += new System.EventHandler(this.radioBtnFile_CheckedChanged);
+            // 
+            // txtBoxInputImage
+            // 
+            this.txtBoxInputImage.Location = new System.Drawing.Point(9, 32);
+            this.txtBoxInputImage.Name = "txtBoxInputImage";
+            this.txtBoxInputImage.ReadOnly = true;
+            this.txtBoxInputImage.Size = new System.Drawing.Size(311, 20);
+            this.txtBoxInputImage.TabIndex = 0;
+            this.txtBoxInputImage.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtBoxInputImage_MouseDown);
+            // 
+            // progressBarCapacity
+            // 
+            this.progressBarCapacity.Location = new System.Drawing.Point(9, 296);
+            this.progressBarCapacity.Maximum = 0;
+            this.progressBarCapacity.Name = "progressBarCapacity";
+            this.progressBarCapacity.Size = new System.Drawing.Size(311, 23);
+            this.progressBarCapacity.TabIndex = 10;
+            // 
+            // radioBtnText
+            // 
+            this.radioBtnText.AutoSize = true;
+            this.radioBtnText.Enabled = false;
+            this.radioBtnText.Location = new System.Drawing.Point(9, 97);
+            this.radioBtnText.Name = "radioBtnText";
+            this.radioBtnText.Size = new System.Drawing.Size(46, 17);
+            this.radioBtnText.TabIndex = 4;
+            this.radioBtnText.Text = "Text";
+            this.radioBtnText.UseVisualStyleBackColor = true;
+            // 
+            // txtBoxFile
+            // 
+            this.txtBoxFile.Enabled = false;
+            this.txtBoxFile.Location = new System.Drawing.Point(56, 71);
+            this.txtBoxFile.Name = "txtBoxFile";
+            this.txtBoxFile.ReadOnly = true;
+            this.txtBoxFile.Size = new System.Drawing.Size(264, 20);
+            this.txtBoxFile.TabIndex = 5;
+            this.txtBoxFile.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtBoxFile_MouseDown);
+            // 
+            // txtBoxText
+            // 
+            this.txtBoxText.Location = new System.Drawing.Point(9, 120);
+            this.txtBoxText.MaxLength = 0;
+            this.txtBoxText.Multiline = true;
+            this.txtBoxText.Name = "txtBoxText";
+            this.txtBoxText.ReadOnly = true;
+            this.txtBoxText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtBoxText.Size = new System.Drawing.Size(311, 170);
+            this.txtBoxText.TabIndex = 6;
+            this.txtBoxText.TextChanged += new System.EventHandler(this.txtBoxText_TextChanged);
+            // 
             // txtBoxOutputFileName
             // 
             this.txtBoxOutputFileName.Enabled = false;
@@ -149,14 +228,6 @@
             this.lblOutputFile.Size = new System.Drawing.Size(87, 13);
             this.lblOutputFile.TabIndex = 11;
             this.lblOutputFile.Text = "Output file name:";
-            // 
-            // progressBarCapacity
-            // 
-            this.progressBarCapacity.Location = new System.Drawing.Point(9, 296);
-            this.progressBarCapacity.Maximum = 0;
-            this.progressBarCapacity.Name = "progressBarCapacity";
-            this.progressBarCapacity.Size = new System.Drawing.Size(311, 23);
-            this.progressBarCapacity.TabIndex = 10;
             // 
             // txtBoxOutputFolder
             // 
@@ -177,83 +248,9 @@
             this.lblOutputFolder.TabIndex = 7;
             this.lblOutputFolder.Text = "Output file folder:";
             // 
-            // txtBoxText
-            // 
-            this.txtBoxText.Location = new System.Drawing.Point(9, 120);
-            this.txtBoxText.MaxLength = 0;
-            this.txtBoxText.Multiline = true;
-            this.txtBoxText.Name = "txtBoxText";
-            this.txtBoxText.ReadOnly = true;
-            this.txtBoxText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtBoxText.Size = new System.Drawing.Size(311, 170);
-            this.txtBoxText.TabIndex = 6;
-            this.txtBoxText.TextChanged += new System.EventHandler(this.txtBoxText_TextChanged);
-            // 
-            // txtBoxFile
-            // 
-            this.txtBoxFile.Enabled = false;
-            this.txtBoxFile.Location = new System.Drawing.Point(56, 71);
-            this.txtBoxFile.Name = "txtBoxFile";
-            this.txtBoxFile.ReadOnly = true;
-            this.txtBoxFile.Size = new System.Drawing.Size(264, 20);
-            this.txtBoxFile.TabIndex = 5;
-            this.txtBoxFile.TextChanged += new System.EventHandler(this.txtBoxFile_TextChanged);
-            this.txtBoxFile.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtBoxFile_MouseDown);
-            // 
-            // radioBtnText
-            // 
-            this.radioBtnText.AutoSize = true;
-            this.radioBtnText.Enabled = false;
-            this.radioBtnText.Location = new System.Drawing.Point(9, 97);
-            this.radioBtnText.Name = "radioBtnText";
-            this.radioBtnText.Size = new System.Drawing.Size(46, 17);
-            this.radioBtnText.TabIndex = 4;
-            this.radioBtnText.Text = "Text";
-            this.radioBtnText.UseVisualStyleBackColor = true;
-            // 
-            // radioBtnFile
-            // 
-            this.radioBtnFile.AutoSize = true;
-            this.radioBtnFile.Enabled = false;
-            this.radioBtnFile.Location = new System.Drawing.Point(9, 72);
-            this.radioBtnFile.Name = "radioBtnFile";
-            this.radioBtnFile.Size = new System.Drawing.Size(41, 17);
-            this.radioBtnFile.TabIndex = 3;
-            this.radioBtnFile.Text = "File";
-            this.radioBtnFile.UseVisualStyleBackColor = true;
-            this.radioBtnFile.CheckedChanged += new System.EventHandler(this.radioBtnFile_CheckedChanged);
-            // 
-            // lblData
-            // 
-            this.lblData.AutoSize = true;
-            this.lblData.Location = new System.Drawing.Point(6, 55);
-            this.lblData.Name = "lblData";
-            this.lblData.Size = new System.Drawing.Size(58, 13);
-            this.lblData.TabIndex = 2;
-            this.lblData.Text = "Input data:";
-            // 
-            // lblInputImage
-            // 
-            this.lblInputImage.AutoSize = true;
-            this.lblInputImage.Location = new System.Drawing.Point(6, 16);
-            this.lblInputImage.Name = "lblInputImage";
-            this.lblInputImage.Size = new System.Drawing.Size(39, 13);
-            this.lblInputImage.TabIndex = 1;
-            this.lblInputImage.Text = "Image:";
-            // 
-            // txtBoxInputImage
-            // 
-            this.txtBoxInputImage.Location = new System.Drawing.Point(9, 32);
-            this.txtBoxInputImage.Name = "txtBoxInputImage";
-            this.txtBoxInputImage.ReadOnly = true;
-            this.txtBoxInputImage.Size = new System.Drawing.Size(311, 20);
-            this.txtBoxInputImage.TabIndex = 0;
-            this.txtBoxInputImage.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtBoxInputImage_MouseDown);
-            // 
             // radioBtnEncode
             // 
             this.radioBtnEncode.AutoSize = true;
-            this.radioBtnEncode.Enabled = false;
             this.radioBtnEncode.Location = new System.Drawing.Point(12, 483);
             this.radioBtnEncode.Name = "radioBtnEncode";
             this.radioBtnEncode.Size = new System.Drawing.Size(62, 17);
@@ -264,7 +261,6 @@
             // radioBtnDecode
             // 
             this.radioBtnDecode.AutoSize = true;
-            this.radioBtnDecode.Enabled = false;
             this.radioBtnDecode.Location = new System.Drawing.Point(12, 506);
             this.radioBtnDecode.Name = "radioBtnDecode";
             this.radioBtnDecode.Size = new System.Drawing.Size(63, 17);
@@ -302,6 +298,7 @@
             this.MaximizeBox = false;
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.groupProps.ResumeLayout(false);
             this.groupProps.PerformLayout();
             this.groupInputData.ResumeLayout(false);
