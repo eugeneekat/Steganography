@@ -13,7 +13,7 @@ using System.IO;
 using System.Threading;
 
 using Encryptors;
-using EncryptionExtenstions;
+using EncryptionExtension;
 using System.Security.Cryptography;
 
 namespace Steganography
@@ -94,8 +94,9 @@ namespace Steganography
                 try
                 {
                     //Open image and covert into Bitmap
-                    using (Image image = Image.FromFile(this.openFileDialog.FileName))
-                        this.bmp = new Bitmap(image);
+                    //using (Image image = Image.FromFile(this.openFileDialog.FileName))//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    using (FileStream fs = File.Open(this.openFileDialog.FileName, FileMode.Open, FileAccess.ReadWrite))
+                        this.bmp = new Bitmap(fs);
                     //Set capacity filename and reset texbox input
                     this.txtBoxText.Text                = string.Empty;
                     this.txtBoxInputImage.Text          = this.openFileDialog.FileName;
@@ -184,20 +185,21 @@ namespace Steganography
             {
                 MessageBox.Show(validation, "Error");
                 return;
-            }
-            //Prepare path for save
-            string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
+            }           
             //Prepare file for save output result and temp file for encoding output result file
             FileStream saveFile = null;
-            FileStream tempFile = null;
-
-
-            
+            FileStream tempFile = null;           
             try
             {
+                //Prepare path for save
+                string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
+                //Block controls
+                foreach (Control c in this.Controls)
+                    c.Enabled = false;
                 //Encode
                 if (this.radioBtnEncode.Checked)
                 {
+                    this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));                    
                     //File
                     if (this.radioBtnFile.Checked)
                     {
@@ -207,17 +209,13 @@ namespace Steganography
                             //Get file name and extension
                             string tmpPath = Path.GetFileName(this.file.Name);
                             if (File.Exists(tmpPath))
-                            {
-                                MessageBox.Show(string.Format("Can't create temp file: {0} - file alreadyExist", tmpPath), "Error");
-                                return;
-                            }
+                                throw new FileLoadException(string.Format("Can't create temp file: {0} - file alreadyExist", tmpPath));
                             //Create temp file for encrypion
                             tempFile = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite);
                             //Async file in temp, encrypt file and PutFile into image
-
                             await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
                             await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
-                            await Task.Run(() => this.seg.PutFile(this.bmp, tempFile), this.token);
+                            await Task.Run(() => this.seg.PutFile(this.bmp, tempFile, this.token));
                         }
                         //Don't encrypt
                         else
@@ -233,19 +231,19 @@ namespace Steganography
                         else
                             this.seg.PutText(this.bmp, this.txtBoxText.Text);
                     }
-                    //Save new bmp
+                    //Save new bmp if operation not cancelled
                     if(!this.token.IsCancellationRequested)
                         this.bmp.Save(path);
                 }
                 //Decode
                 else
                 {
-                    this.bmp = new Bitmap(this.txtBoxInputImage.Text);
+                    //this.bmp = new Bitmap(File.Open(this.txtBoxInputImage.Text, FileMode.Open, FileAccess.ReadWrite));
                     //File
                     if (this.txtBoxOutputFolder.Text != string.Empty)
                     {
                         //Async get file from bmp
-                        saveFile = await Task.Run(() => this.seg.GetFile(this.bmp, path, this.token), this.token);
+                        saveFile = await Task.Run(() => this.seg.GetFile(this.bmp, path, this.token));
                         //Decrypt
                         if (this.checkBoxEncrypt.Checked)
                             await saveFile.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
@@ -278,9 +276,10 @@ namespace Steganography
                     tempFile.Close();
                     File.Delete(tempFile.Name);
                 }
-                if (this.token.IsCancellationRequested)
-                    Application.Exit();
-            }
+                //Unblock controls
+                foreach (Control c in this.Controls)
+                    c.Enabled = true;
+            }           
         }
 
         //Check input data
@@ -319,14 +318,12 @@ namespace Steganography
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {            
-            if (this.source.IsCancellationRequested == false)
+        {          
+            if (this.btnStart.Enabled == false)
             {
                 e.Cancel = true;
-                this.source.Cancel(true);               
+                this.source.Cancel();               
             }
-            else
-                e.Cancel = false;
         }
     }
 }
