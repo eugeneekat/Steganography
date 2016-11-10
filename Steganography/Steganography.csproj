@@ -33,11 +33,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EncryptionExtension">
-      <HintPath>..\..\..\GitRepos\EncryptionExtension\EncryptionExtension\bin\Debug\EncryptionExtension.dll</HintPath>
+    <Reference Include="EncryptionExtension, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\EncryptionExtension.dll</HintPath>
     </Reference>
-    <Reference Include="Encryptors">
-      <HintPath>..\..\..\GitRepos\EncryptionExtension\EncryptionExtension\bin\Debug\Encryptors.dll</HintPath>
+    <Reference Include="Encryptors, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\Encryptors.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

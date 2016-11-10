@@ -179,30 +179,36 @@ namespace Steganography
         //Start work
         private async void btnStart_Click(object sender, EventArgs e)
         {
-            //Input data validation
+            #region Input data validation
             string validation = this.IsValidData();
             if(validation != string.Empty)
             {
                 MessageBox.Show(validation, "Error");
                 return;
-            }           
+            }
+            #endregion
+            
             //Prepare file for save output result and temp file for encoding output result file
             FileStream saveFile = null;
             FileStream tempFile = null;           
             try
             {
-                //Prepare path for save
-                string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
                 //Block controls
                 foreach (Control c in this.Controls)
                     c.Enabled = false;
-                //Encode
+                
+                //Prepare path for save
+                string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;                
+               
                 if (this.radioBtnEncode.Checked)
                 {
-                    this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));                    
-                    //File
+                    #region Encode
+                    //Prepare bmp for encoding
+                    this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));
+                                      
                     if (this.radioBtnFile.Checked)
                     {
+                        #region File encode
                         //Encrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
                         {
@@ -211,34 +217,39 @@ namespace Steganography
                             if (File.Exists(tmpPath))
                                 throw new FileLoadException(string.Format("Can't create temp file: {0} - file alreadyExist", tmpPath));
                             //Create temp file for encrypion
-                            tempFile = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite);
-                            //Async file in temp, encrypt file and PutFile into image
-                            await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
-                            await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
-                            await Task.Run(() => this.seg.PutFile(this.bmp, tempFile, this.token));
+                            using (tempFile = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite))
+                            {
+                                //Async file in temp, encrypt file and PutFile into image
+                                await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
+                                await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
+                                await Task.Run(() => this.seg.PutFile(this.bmp, tempFile, this.token));
+                            }
                         }
                         //Don't encrypt
                         else
-                            await Task.Run(() => this.seg.PutFile(this.bmp, this.file, this.token));                          
+                            await Task.Run(() => this.seg.PutFile(this.bmp, this.file, this.token));
+                        #endregion
                     }
                     //Text
                     else
                     {
+                        #region Text encode
                         //Encrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
                             this.seg.PutText(this.bmp, this.EncryptionXorText(this.txtBoxText.Text, this.txtBoxPassword.Text));
                         //Don't encrypt
                         else
                             this.seg.PutText(this.bmp, this.txtBoxText.Text);
+                        #endregion
                     }
                     //Save new bmp if operation not cancelled
-                    if(!this.token.IsCancellationRequested)
+                    if (!this.token.IsCancellationRequested)
                         this.bmp.Save(path);
+                    #endregion
                 }
-                //Decode
                 else
                 {
-                    //this.bmp = new Bitmap(File.Open(this.txtBoxInputImage.Text, FileMode.Open, FileAccess.ReadWrite));
+                    #region Decode
                     //File
                     if (this.txtBoxOutputFolder.Text != string.Empty)
                     {
@@ -257,6 +268,7 @@ namespace Steganography
                             outMessage = EncryptionXorText(outMessage, this.txtBoxPassword.Text);
                         this.txtBoxText.Text = outMessage;
                     }
+                    #endregion
                 }
             }
             catch(Exception ex)
@@ -264,22 +276,15 @@ namespace Steganography
                 MessageBox.Show(ex.Message, "Error");
             }
             finally
-            {
-                if (saveFile != null)
-                {
-                    saveFile.Close();
-                    if (this.token.IsCancellationRequested)
-                        File.Delete(saveFile.Name);            
-                }
+            {          
                 if (tempFile != null)
-                {
-                    tempFile.Close();
                     File.Delete(tempFile.Name);
-                }
+                if(this.token.IsCancellationRequested)
+                    Application.Exit();
                 //Unblock controls
                 foreach (Control c in this.Controls)
                     c.Enabled = true;
-            }           
+            }        
         }
 
         //Check input data
