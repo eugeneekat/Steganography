@@ -37,22 +37,29 @@ namespace Steganography
             }
         }
 
+        //Input file for encoding
         FileStream file = null;
 
+        //Cancellation
         CancellationTokenSource source = new CancellationTokenSource();
         CancellationToken token;
+
+        //ProgressBar
+        Progress<int> progressHandler = null;
+        IProgress<int> progress = null;
 
         public Form1()
         {
             InitializeComponent();
             this.token = source.Token;
+            this.progressHandler = new Progress<int>(value => { this.progressBarEncode.Value = value; });
+            this.progress = this.progressHandler as IProgress<int>;
         }
         
-        //CheckBox encrypt and textBoxEncrypt
+        //Encryption check/uncheck
         private void checkBoxEncrypt_CheckedChanged(object sender, EventArgs e)
         {
-            this.txtBoxPassword.Enabled = this.checkBoxEncrypt.Checked;
-            
+            this.txtBoxPassword.Enabled = this.checkBoxEncrypt.Checked;           
         }
         
         //Folder dialog for output folder
@@ -74,7 +81,7 @@ namespace Steganography
             {
                 this.txtBoxText.ReadOnly = false;
                 this.progressBarCapacity.Value      = this.txtBoxText.Text.Length;
-                int maxLength = this.BmpPixelCount > (int)Int16.MaxValue ? (int)Int16.MaxValue : this.BmpPixelCount ?? 0;
+                int maxLength = this.BmpPixelCount > (int)short.MaxValue ? (int)short.MaxValue : this.BmpPixelCount ?? 0;
                 this.progressBarCapacity.Maximum    = this.txtBoxText.MaxLength = maxLength;         
             }
             else
@@ -94,9 +101,8 @@ namespace Steganography
                 try
                 {
                     //Open image and covert into Bitmap
-                    //using (Image image = Image.FromFile(this.openFileDialog.FileName))//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     using (FileStream fs = File.Open(this.openFileDialog.FileName, FileMode.Open, FileAccess.ReadWrite))
-                        this.bmp = new Bitmap(fs);
+                        this.bmp = new Bitmap(fs);                    
                     //Set capacity filename and reset texbox input
                     this.txtBoxText.Text                = string.Empty;
                     this.txtBoxInputImage.Text          = this.openFileDialog.FileName;
@@ -198,14 +204,12 @@ namespace Steganography
                     c.Enabled = false;
                 
                 //Prepare path for save
-                string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;                
-               
+                string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
                 if (this.radioBtnEncode.Checked)
                 {
                     #region Encode
-                    //Prepare bmp for encoding
-                    this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));
-                                      
+                    //Prepare bmp for encoding                  
+                    this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));                     
                     if (this.radioBtnFile.Checked)
                     {
                         #region File encode
@@ -219,15 +223,15 @@ namespace Steganography
                             //Create temp file for encrypion
                             using (tempFile = new FileStream(tmpPath, FileMode.CreateNew, FileAccess.ReadWrite))
                             {
-                                //Async file in temp, encrypt file and PutFile into image
+                                //Async make copy of file, encrypt file and encode file into image
                                 await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
-                                await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
-                                await Task.Run(() => this.seg.PutFile(this.bmp, tempFile, this.token));
+                                await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);                               
+                                await this.seg.PutFileAsync(this.bmp, tempFile, this.token, this.progress.Report);
                             }
                         }
-                        //Don't encrypt
+                        //Without encryption
                         else
-                            await Task.Run(() => this.seg.PutFile(this.bmp, this.file, this.token));
+                            await this.seg.PutFileAsync(this.bmp, this.file, this.token, this.progress.Report);
                         #endregion
                     }
                     //Text
@@ -242,7 +246,7 @@ namespace Steganography
                             this.seg.PutText(this.bmp, this.txtBoxText.Text);
                         #endregion
                     }
-                    //Save new bmp if operation not cancelled
+                    //If operation wasn't cancelled - save new bmp 
                     if (!this.token.IsCancellationRequested)
                         this.bmp.Save(path);
                     #endregion
@@ -254,7 +258,7 @@ namespace Steganography
                     if (this.txtBoxOutputFolder.Text != string.Empty)
                     {
                         //Async get file from bmp
-                        saveFile = await Task.Run(() => this.seg.GetFile(this.bmp, path, this.token));
+                        saveFile = await this.seg.GetFileAsync(this.bmp, path, this.token, this.progress.Report);
                         //Decrypt
                         if (this.checkBoxEncrypt.Checked)
                             await saveFile.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
@@ -265,7 +269,7 @@ namespace Steganography
                         string outMessage = this.seg.GetText(this.bmp);
                         //Decrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
-                            outMessage = EncryptionXorText(outMessage, this.txtBoxPassword.Text);
+                            outMessage = this.EncryptionXorText(outMessage, this.txtBoxPassword.Text);
                         this.txtBoxText.Text = outMessage;
                     }
                     #endregion
@@ -276,18 +280,26 @@ namespace Steganography
                 MessageBox.Show(ex.Message, "Error");
             }
             finally
-            {          
+            {
+                //Close saved file
+                if (saveFile != null)
+                    saveFile.Close();       
+                //Clear temp file
                 if (tempFile != null)
-                    File.Delete(tempFile.Name);
-                if(this.token.IsCancellationRequested)
-                    Application.Exit();
+                    File.Delete(tempFile.Name);                
                 //Unblock controls
                 foreach (Control c in this.Controls)
                     c.Enabled = true;
+                //Close application
+                if (this.token.IsCancellationRequested)
+                    Application.Exit();
             }        
         }
 
-        //Check input data
+        /// <summary>
+        /// Check input fields from user
+        /// </summary>
+        /// <returns>Message about empty field or empty string if all is ok</returns>
         private string IsValidData()
         {
             if (!this.radioBtnEncode.Checked && !this.radioBtnDecode.Checked)
@@ -299,7 +311,7 @@ namespace Steganography
                 if(this.radioBtnFile.Checked)
                 {
                     if (this.txtBoxFile.Text == string.Empty)
-                        return "Select decoding file";
+                        return "Select file for encoding";
                 }
                 //Text
                 else
@@ -313,7 +325,12 @@ namespace Steganography
             return string.Empty;
         }
 
-        //Helper method xor text encryption
+        /// <summary>
+        /// Encrypt text by password using XOR encryptor
+        /// </summary>
+        /// <param name="text">Text</param>
+        /// <param name="password">Password</param>
+        /// <returns>Ecrypted text</returns>
         private string EncryptionXorText(string text, string password)
         {
             byte[] encText      = Encoding.Unicode.GetBytes(text);
@@ -324,11 +341,13 @@ namespace Steganography
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {          
+            //If application do work
             if (this.btnStart.Enabled == false)
             {
                 e.Cancel = true;
                 this.source.Cancel();               
             }
         }
+
     }
 }
