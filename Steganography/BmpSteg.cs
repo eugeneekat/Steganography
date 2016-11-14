@@ -268,6 +268,7 @@ namespace Steganography
                 }
                 catch (Exception)
                 {
+                    fs.Close();
                     File.Delete(fs.Name);
                     throw;
                 }
@@ -306,6 +307,7 @@ namespace Steganography
                 }
                 catch (Exception)
                 {
+                    fs.Close();
                     File.Delete(fs.Name);
                     throw;
                 }
@@ -343,6 +345,7 @@ namespace Steganography
                 }
                 catch (Exception)
                 {
+                    fs.Close();
                     File.Delete(fs.Name);
                     throw;
                 }
