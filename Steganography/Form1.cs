@@ -11,10 +11,11 @@ using System.Windows.Forms;
 
 using System.IO;
 using System.Threading;
+using System.Security.Cryptography;
 
 using Encryptors;
 using EncryptionExtension;
-using System.Security.Cryptography;
+
 
 namespace Steganography
 {
@@ -53,7 +54,8 @@ namespace Steganography
             InitializeComponent();
             this.token = source.Token;
             this.progressHandler = new Progress<int>(value => { this.progressBarEncode.Value = value; });
-            this.progress = this.progressHandler as IProgress<int>;
+            this.progress = this.progressHandler;
+            this.lblProgress.BackColor = Color.Transparent;
         }
         
         //Encryption check/uncheck
@@ -100,12 +102,21 @@ namespace Steganography
             {                 
                 try
                 {
+                    if (this.bmp != null)
+                        this.bmp.Dispose();
+                    if(this.file != null)
+                    {
+                        this.file.Close();
+                        this.file = null;
+                    }
                     //Open image and covert into Bitmap
                     using (FileStream fs = File.Open(this.openFileDialog.FileName, FileMode.Open, FileAccess.ReadWrite))
-                        this.bmp = new Bitmap(fs);                    
+                        this.bmp = new Bitmap(fs);
                     //Set capacity filename and reset texbox input
+                    this.txtBoxFile.Text                = string.Empty;
                     this.txtBoxText.Text                = string.Empty;
                     this.txtBoxInputImage.Text          = this.openFileDialog.FileName;
+                    this.progressBarCapacity.Value      = 0;
                     this.progressBarCapacity.Maximum    = this.txtBoxText.MaxLength = this.BmpPixelCount ?? 0;
                     //Unblock interface
                     foreach (RadioButton button in this.groupInputData.Controls.OfType<RadioButton>())
@@ -225,13 +236,18 @@ namespace Steganography
                             {
                                 //Async make copy of file, encrypt file and encode file into image
                                 await this.file.CopyToAsync(tempFile, (int)file.Length, this.token);
-                                await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);                               
-                                await this.seg.PutFileAsync(this.bmp, tempFile, this.token, this.progress.Report);
+                                this.lblProgress.Text = "Encryption";
+                                await tempFile.EncryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token, this.progress.Report);
+                                this.lblProgress.Text = "Encoding";
+                                await this.seg.EncodeFileAsync(this.bmp, tempFile, this.token, this.progress.Report);
                             }
                         }
                         //Without encryption
                         else
-                            await this.seg.PutFileAsync(this.bmp, this.file, this.token, this.progress.Report);
+                        {
+                            this.lblProgress.Text = "Encoding";
+                            await this.seg.EncodeFileAsync(this.bmp, this.file, this.token, this.progress.Report);
+                        }
                         #endregion
                     }
                     //Text
@@ -240,10 +256,10 @@ namespace Steganography
                         #region Text encode
                         //Encrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
-                            this.seg.PutText(this.bmp, this.EncryptionXorText(this.txtBoxText.Text, this.txtBoxPassword.Text));
+                            this.seg.EncodeText(this.bmp, this.EncryptionXorText(this.txtBoxText.Text, this.txtBoxPassword.Text));
                         //Don't encrypt
                         else
-                            this.seg.PutText(this.bmp, this.txtBoxText.Text);
+                            this.seg.EncodeText(this.bmp, this.txtBoxText.Text);
                         #endregion
                     }
                     //If operation wasn't cancelled - save new bmp 
@@ -258,15 +274,19 @@ namespace Steganography
                     if (this.txtBoxOutputFolder.Text != string.Empty)
                     {
                         //Async get file from bmp
-                        saveFile = await this.seg.GetFileAsync(this.bmp, path, this.token, this.progress.Report);
+                        this.lblProgress.Text = "Decoding";
+                        saveFile = await this.seg.DecodeFileAsync(this.bmp, path, this.token, this.progress.Report);
                         //Decrypt
                         if (this.checkBoxEncrypt.Checked)
-                            await saveFile.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token);
+                        {
+                            this.lblProgress.Text = "Decrypt";
+                            await saveFile.DecryptAsync(ByteEncryptor.Xor, Encoding.Unicode.GetBytes(this.txtBoxPassword.Text), this.token, this.progress.Report);
+                        }
                     }
                     //Text
                     else
                     {
-                        string outMessage = this.seg.GetText(this.bmp);
+                        string outMessage = this.seg.DecodeText(this.bmp);
                         //Decrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
                             outMessage = this.EncryptionXorText(outMessage, this.txtBoxPassword.Text);
@@ -274,6 +294,7 @@ namespace Steganography
                     }
                     #endregion
                 }
+                this.lblProgress.Text = "Completed";
             }
             catch(Exception ex)
             {

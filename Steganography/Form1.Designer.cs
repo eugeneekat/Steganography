@@ -53,6 +53,7 @@
             this.folderBrowserDialogOutput = new System.Windows.Forms.FolderBrowserDialog();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.groupOutputData = new System.Windows.Forms.GroupBox();
+            this.lblProgress = new System.Windows.Forms.Label();
             this.groupProps.SuspendLayout();
             this.groupInputData.SuspendLayout();
             this.groupOutputData.SuspendLayout();
@@ -282,11 +283,21 @@
             this.groupOutputData.TabStop = false;
             this.groupOutputData.Text = "Output data";
             // 
+            // lblProgress
+            // 
+            this.lblProgress.AutoSize = true;
+            this.lblProgress.BackColor = System.Drawing.SystemColors.Control;
+            this.lblProgress.Location = new System.Drawing.Point(149, 497);
+            this.lblProgress.Name = "lblProgress";
+            this.lblProgress.Size = new System.Drawing.Size(0, 13);
+            this.lblProgress.TabIndex = 14;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(354, 537);
+            this.Controls.Add(this.lblProgress);
             this.Controls.Add(this.groupOutputData);
             this.Controls.Add(this.radioBtnDecode);
             this.Controls.Add(this.radioBtnEncode);
@@ -336,6 +347,7 @@
         private System.Windows.Forms.TextBox txtBoxOutputFileName;
         private System.Windows.Forms.Label lblOutputFile;
         private System.Windows.Forms.GroupBox groupOutputData;
+        private System.Windows.Forms.Label lblProgress;
     }
 }
 
