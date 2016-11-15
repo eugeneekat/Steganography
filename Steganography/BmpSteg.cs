@@ -306,7 +306,7 @@ namespace Steganography
                 //Decode FileSize
                 int fileSize = BitConverter.ToInt32(await Task.FromResult(this.ExtractWithCancellation(image, sizeof(int), position, token)), 0);
                 position += sizeof(int);
-
+                
                 FileStream fs = null;
                 try
                 {
