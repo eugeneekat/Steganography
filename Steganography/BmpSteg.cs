@@ -14,16 +14,11 @@ namespace Steganography
     {
         /*-------------------------Markers-------------------------*/
 
-        public byte [] fileMarker = Encoding.ASCII.GetBytes("FE");
-        public byte [] textMarker = Encoding.ASCII.GetBytes("TE");
+        public byte[] fileMarker = Encoding.ASCII.GetBytes("FE");
+        public byte[] textMarker = Encoding.ASCII.GetBytes("TE");
 
-        /*-------------------Put and get methods-------------------*/
-       
-        /// <summary>
-        /// Put text into image
-        /// </summary>
-        /// <param name="image">Bitmap image</param>
-        /// <param name="text">Text</param>
+        /*----------------Encode and decode methods----------------*/
+
         public virtual void EncodeText(Bitmap image, string text)
         {
             byte[] source = Encoding.Unicode.GetBytes(text);
@@ -32,116 +27,85 @@ namespace Steganography
             //Offset position
             int position = 0;
             //Insert marker
-            this.Insert(image, this.textMarker, position);
+            this.Encode(image, this.textMarker, position);
             position += this.textMarker.Length;
             //Insert size
-            this.Insert(image, BitConverter.GetBytes(source.Length), position);
+            this.Encode(image, BitConverter.GetBytes(source.Length), position);
             position += sizeof(int);
             //Insert source
-            this.Insert(image, source, position);
+            this.Encode(image, source, position);
         }
 
-        /// <summary>
-        /// Get Text from image
-        /// </summary>
-        /// <param name="image">Bitmap image</param>
-        /// <returns>Text data</returns>
         public virtual string DecodeText(Bitmap image)
         {
             //Offset position
             int position = 0;
             //Check marker
-            if (!this.Extract(image, this.textMarker.Length, position).SequenceEqual(this.textMarker))
+            if (!this.Decode(image, this.textMarker.Length, position).SequenceEqual(this.textMarker))
                 throw new ArgumentException("Image doesn't have a mark");
             position += this.textMarker.Length;
             //Get size
-            int size = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            int size = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
             //Get and return message
-            return Encoding.Unicode.GetString(this.Extract(image, size, position));
+            return Encoding.Unicode.GetString(this.Decode(image, size, position));
         }
 
-        /// <summary>
-        /// Put FileStream into image
-        /// </summary>
-        /// <param name="image">Bitmap Image</param>
-        /// <param name="file">FileStream</param>
         public virtual void EncodeFile(Bitmap image, FileStream file)
         {
             //Get extenstion
-            byte [] extension = Encoding.Unicode.GetBytes(Path.GetExtension(file.Name));
-            
+            byte[] extension = Encoding.Unicode.GetBytes(Path.GetExtension(file.Name));
             //Get total data size
             long totalSize = this.fileMarker.Length + sizeof(int) + extension.Length + sizeof(int) + file.Length;
             //Check
             if (!IsAvailableFreeSpace(image, totalSize))
                 throw new ArgumentOutOfRangeException("Target data size more than container size");
-
             byte[] source = new byte[file.Length];
             file.Read(source, 0, source.Length);
-
             int position = 0;
             //Put marker
-            this.Insert(image, this.fileMarker, position);
+            this.Encode(image, this.fileMarker, position);
             position += fileMarker.Length;
-
             //Put extension size
-            this.Insert(image, BitConverter.GetBytes(extension.Length), position);
+            this.Encode(image, BitConverter.GetBytes(extension.Length), position);
             position += sizeof(int);
-
             //Put extension
-            this.Insert(image, extension, position);
+            this.Encode(image, extension, position);
             position += extension.Length;
-
             //Put data size
-            this.Insert(image, BitConverter.GetBytes(source.Length), position);
+            this.Encode(image, BitConverter.GetBytes(source.Length), position);
             position += sizeof(int);
-
             //Put data
-            this.Insert(image, source, position);
+            this.Encode(image, source, position);
         }
 
-        /// <summary>
-        /// Get FileStream from image
-        /// </summary>
-        /// <param name="image">Bitmap image</param>
-        /// <param name="outputPath">Output path</param>
-        /// <returns>FileStream with result file</returns>
         public virtual FileStream DecodeFile(Bitmap image, string outputPath)
         {
             int position = 0;
-            if (!this.Extract(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
+            if (!this.Decode(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
                 throw new ArgumentException("Image doesn't have file marker");
             position += this.fileMarker.Length;
-
             //Get file extension length
-            int fileExtensionLength = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            int fileExtensionLength = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
-
             //Get fileName
-            string fileExtension = Encoding.Unicode.GetString(this.Extract(image, fileExtensionLength, position));
+            string fileExtension = Encoding.Unicode.GetString(this.Decode(image, fileExtensionLength, position));
             position += fileExtensionLength;
-
             //Get FileSize
-            int fileSize = BitConverter.ToInt32(this.Extract(image, sizeof(int), position), 0);
+            int fileSize = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
-
             //Create file
             FileStream fs = new FileStream(outputPath + fileExtension, FileMode.CreateNew, FileAccess.ReadWrite);
-
             //Write file
-            fs.Write(this.Extract(image, fileSize, position), 0, fileSize);
+            fs.Write(this.Decode(image, fileSize, position), 0, fileSize);
             return fs;
         }
 
-        
-        
-        
-        /*----------Put and get async methods----------*/
+        /*-------------Encode and decode async methods-------------*/
 
         public virtual async Task EncodeFileAsync(Bitmap image, FileStream file)
         {
-            await Task.Run(async() =>
+            await Task.Run(async () =>
             {
                 byte[] extension = Encoding.Unicode.GetBytes(Path.GetExtension(file.Name));
                 long totalSize = this.fileMarker.Length + sizeof(int) + extension.Length + sizeof(int) + file.Length;
@@ -150,15 +114,15 @@ namespace Steganography
                 byte[] source = new byte[file.Length];
                 await file.ReadAsync(source, 0, source.Length);
                 int position = 0;
-                await Task.FromResult(this.Insert(image, this.fileMarker, position));
+                await Task.FromResult(this.Encode(image, this.fileMarker, position));
                 position += fileMarker.Length;
-                await Task.FromResult(this.Insert(image, BitConverter.GetBytes(extension.Length), position));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(extension.Length), position));
                 position += sizeof(int);
-                await Task.FromResult(this.Insert(image, extension, position));
+                await Task.FromResult(this.Encode(image, extension, position));
                 position += extension.Length;
-                await Task.FromResult(this.Insert(image, BitConverter.GetBytes(source.Length), position));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(source.Length), position));
                 position += sizeof(int);
-                await Task.FromResult(this.Insert(image, source, position));
+                await Task.FromResult(this.Encode(image, source, position));
             });
         }
 
@@ -173,22 +137,22 @@ namespace Steganography
                 byte[] source = new byte[file.Length];
                 await file.ReadAsync(source, 0, source.Length, token);
                 int position = 0;
-                await Task.FromResult(this.InsertWithCancellation(image, this.fileMarker, position, token));
+                await Task.FromResult(this.Encode(image, this.fileMarker, position, token));
                 position += fileMarker.Length;
-                await Task.FromResult(this.InsertWithCancellation(image, BitConverter.GetBytes(extension.Length), position, token));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(extension.Length), position, token));
                 position += sizeof(int);
-                await Task.FromResult(this.InsertWithCancellation(image, extension, position, token));
+                await Task.FromResult(this.Encode(image, extension, position, token));
                 position += extension.Length;
-                await Task.FromResult(this.InsertWithCancellation(image, BitConverter.GetBytes(source.Length), position, token));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(source.Length), position, token));
                 position += sizeof(int);
-                await Task.FromResult(this.InsertWithCancellation(image, source, position, token));
+                await Task.FromResult(this.Encode(image, source, position, token));
             });
         }
 
-        public virtual async Task EncodeFileAsync(Bitmap image, FileStream file, CancellationToken token, Action<int>progress)
+        public virtual async Task EncodeFileAsync(Bitmap image, FileStream file, CancellationToken token, Action<int> progress)
         {
             //Start Task for encoding
-            await Task.Run(async() =>
+            await Task.Run(async () =>
             {
                 //Get extenstion
                 byte[] extension = Encoding.Unicode.GetBytes(Path.GetExtension(file.Name));
@@ -202,19 +166,19 @@ namespace Steganography
                 await file.ReadAsync(source, 0, source.Length, token);
                 int position = 0;
                 //Encode marker
-                await Task.FromResult(this.InsertWithCancellation(image, this.fileMarker, position, token));
+                await Task.FromResult(this.Encode(image, this.fileMarker, position, token));
                 position += fileMarker.Length;
                 //Encode extension size
-                await Task.FromResult(this.InsertWithCancellation(image, BitConverter.GetBytes(extension.Length), position, token));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(extension.Length), position, token));
                 position += sizeof(int);
                 //Encode extension
-                await Task.FromResult(this.InsertWithCancellation(image, extension, position, token));
+                await Task.FromResult(this.Encode(image, extension, position, token));
                 position += extension.Length;
                 //Encode data size
-                await Task.FromResult(this.InsertWithCancellation(image, BitConverter.GetBytes(source.Length), position, token));
+                await Task.FromResult(this.Encode(image, BitConverter.GetBytes(source.Length), position, token));
                 position += sizeof(int);
                 //Encode data with progress
-                await Task.FromResult(this.InsertWithCancellation(image, source, position, token, progress));
+                await Task.FromResult(this.Encode(image, source, position, token, progress));
             });
         }
 
@@ -223,28 +187,28 @@ namespace Steganography
             return await Task.Run(async () =>
             {
                 int position = 0;
-                if (!this.Extract(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
+                if (!this.Decode(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
                     throw new ArgumentException("Image doesn't have file marker");
                 position += this.fileMarker.Length;
-                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.Extract(image, sizeof(int), position)), 0);
+                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position)), 0);
                 position += sizeof(int);
-                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.Extract(image, fileExtensionLength, position)));
+                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.Decode(image, fileExtensionLength, position)));
                 position += fileExtensionLength;
-                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.Extract(image, sizeof(int), position)), 0);
+                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position)), 0);
                 position += sizeof(int);
                 FileStream fs = null;
                 try
                 {
                     fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
-                    await fs.WriteAsync(await Task.FromResult(this.Extract(image, fileSize, position)), 0, fileSize);
+                    await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position)), 0, fileSize);
                 }
                 catch (Exception)
                 {
-                    if(fs != null)
+                    if (fs != null)
                     {
                         fs.Close();
                         File.Delete(fs.Name);
-                    }                   
+                    }
                     throw;
                 }
                 return fs;
@@ -256,20 +220,20 @@ namespace Steganography
             return await Task.Run(async () =>
             {
                 int position = 0;
-                if (!this.Extract(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
+                if (!this.Decode(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
                     throw new ArgumentException("Image doesn't have file marker");
                 position += this.fileMarker.Length;
-                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.ExtractWithCancellation(image, sizeof(int), position, token)), 0);
+                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position, token)), 0);
                 position += sizeof(int);
-                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.ExtractWithCancellation(image, fileExtensionLength, position, token)));
+                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.Decode(image, fileExtensionLength, position, token)));
                 position += fileExtensionLength;
-                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.ExtractWithCancellation(image, sizeof(int), position, token)), 0);
+                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position, token)), 0);
                 position += sizeof(int);
                 FileStream fs = null;
                 try
                 {
                     fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
-                    await fs.WriteAsync(await Task.FromResult(this.ExtractWithCancellation(image, fileSize, position, token)), 0, fileSize, token);
+                    await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position, token)), 0, fileSize, token);
                 }
                 catch (Exception)
                 {
@@ -291,29 +255,29 @@ namespace Steganography
             {
                 int position = 0;
                 //If image don't have marker throw exception
-                if (!this.Extract(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
+                if (!this.Decode(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
                     throw new ArgumentException("Image doesn't have file marker", "image");
                 position += this.fileMarker.Length;
 
                 //Decode file extension length
-                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.ExtractWithCancellation(image, sizeof(int), position, token)), 0);
+                int fileExtensionLength = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position, token)), 0);
                 position += sizeof(int);
 
                 //Decode file name
-                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.ExtractWithCancellation(image, fileExtensionLength, position, token)));
+                string fileExtensionName = Encoding.Unicode.GetString(await Task.FromResult(this.Decode(image, fileExtensionLength, position, token)));
                 position += fileExtensionLength;
 
                 //Decode FileSize
-                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.ExtractWithCancellation(image, sizeof(int), position, token)), 0);
+                int fileSize = BitConverter.ToInt32(await Task.FromResult(this.Decode(image, sizeof(int), position, token)), 0);
                 position += sizeof(int);
-                
+
                 FileStream fs = null;
                 try
                 {
                     //Create file for save
                     fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
                     //Decode data in file
-                    await fs.WriteAsync(await Task.FromResult(this.ExtractWithCancellation(image, fileSize, position, token, progress)), 0, fileSize, token);
+                    await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position, token, progress)), 0, fileSize, token);
                 }
                 catch (Exception)
                 {
@@ -339,19 +303,19 @@ namespace Steganography
         /*---------------------Helper Methods---------------------*/
 
         /// <summary>
-        /// Get pixel coordinates from offset
+        /// Get pixtel position from offset
         /// </summary>
         /// <param name="image">Bitmap image</param>
-        /// <param name="offset">Offset position</param>
-        /// <returns>Point with coordinates</returns>
+        /// <param name="offset">offset</param>
+        /// <returns>Point of pixel position</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         protected Point GetPoint(Bitmap image, int offset)
         {
-            if (offset > image.Width * image.Height)
-                throw new ArgumentOutOfRangeException("Offset higher than pixel count");
             if (image == null)
-                throw new ArgumentNullException("Image null argument");
+                throw new ArgumentNullException("image", "Image null argument");
+            if (offset > image.Width * image.Height)
+                throw new ArgumentOutOfRangeException("offset", offset, "Offset higher than pixel count");
             Point position = new Point();
             if (offset < image.Width)
                 position.X = offset;
@@ -369,29 +333,32 @@ namespace Steganography
         }
 
         /// <summary>
-        /// Check - is available free space in bitmap image for our data
+        /// The method returns the availability of free space in bitmap image
         /// </summary>
         /// <param name="image">Bitmap image</param>
-        /// <param name="length">Data byte array length</param>
-        /// <returns>True- available, False - not available</returns>
+        /// <param name="bitCount">Count of bits</param>
+        /// <returns>True - freespace available, false - not available</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        protected bool IsAvailableFreeSpace(Bitmap image, long length)
+        /// <exception cref="ArgumentException"></exception>
+        protected bool IsAvailableFreeSpace(Bitmap image, long bitCount)
         {
             if (image == null)
                 throw new ArgumentNullException("image", "Image null argument");
-            return image.Height * image.Width - this.fileMarker.Length - sizeof(int) >= length;
+            if (bitCount <= 0)
+                throw new ArgumentException("Incorrect bitCount value", "bitCount");
+            return image.Height * image.Width - this.fileMarker.Length - sizeof(int) >= bitCount;
         }
 
         /// <summary>
-        /// Method insert into image data from source, start from offset value
+        /// Encode byte array into bitmap image from offset position
         /// </summary>
         /// <param name="image">Bitmap image</param>
-        /// <param name="source">Source byte array</param>
-        /// <param name="offset">Offset</param>
+        /// <param name="source">Byte array</param>
+        /// <param name="offset">offset</param>
+        /// <returns>Count of encoded bytes</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        /// <exception cref="ArgumentException"></exception>
-        protected long Insert(Bitmap image, byte[] source, int offset)
+        protected long Encode(Bitmap image, byte[] source, int offset)
         {
             if (source == null)
                 throw new ArgumentNullException("source", "Source null argument");
@@ -401,7 +368,7 @@ namespace Steganography
             for (; position.Y < image.Height; position.Y++)
             {
                 for (; position.X < image.Width; position.X++)
-                {               
+                {
                     if (byteIndex == source.Length)
                         return byteIndex;
                     Color color = image.GetPixel(position.X, position.Y);
@@ -418,7 +385,7 @@ namespace Steganography
                         }
                     }
                     bitCount = 0;
-                    byteIndex++;                  
+                    byteIndex++;
                     color = Color.FromArgb(BitConverter.ToInt32(argb, 0));
                     image.SetPixel(position.X, position.Y, color);
                 }
@@ -428,28 +395,27 @@ namespace Steganography
         }
 
         /// <summary>
-        /// Extract bytes from image with specific length from offset position
+        /// Decode byte array from bitmap image from offset position
         /// </summary>
         /// <param name="image">Bitmap image</param>
-        /// <param name="length">Byte count</param>
-        /// <param name="offset">Offset</param>
-        /// <returns>Return extracted byte array</returns>
+        /// <param name="decodeByteCount">Count of bytes for decoding</param>
+        /// <param name="offset">offset</param>
+        /// <returns>Decoded byte array</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        /// <exception cref="Exception"></exception>
-        protected byte[] Extract(Bitmap image, long length, int offset)
+        protected byte[] Decode(Bitmap image, long decodeByteCount, int offset)
         {
-            if (length > image.Width * image.Height - offset)
-                throw new ArgumentOutOfRangeException("length", length, "Length higher than pixel count");
+            if (decodeByteCount > image.Width * image.Height - offset || decodeByteCount <= 0)
+                throw new ArgumentOutOfRangeException("length", decodeByteCount, "Incorrect length value");
             Point position = GetPoint(image, offset);
-            byte[] stream = new byte[length];
+            byte[] stream = new byte[decodeByteCount];
             int bitCount = 0;
             long byteIndex = 0;
             for (; position.Y < image.Height; position.Y++)
             {
                 for (; position.X < image.Width; position.X++)
                 {
-                    if (byteIndex == length)
+                    if (byteIndex == decodeByteCount)
                         return stream;
                     Color color = image.GetPixel(position.X, position.Y);
                     byte[] b = BitConverter.GetBytes(color.ToArgb());
@@ -472,10 +438,24 @@ namespace Steganography
 
         /*------------Helper Methods with cancellation------------*/
 
-        protected long InsertWithCancellation(Bitmap image, byte[] source, int offset, CancellationToken token)
+        /// <summary>
+        /// Encode byte array into bitmap image from offset position with cancellation
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="source">Byte array</param>
+        /// <param name="offset">offset</param>
+        /// <param name="token">CancellationToken</param>
+        /// <returns>Count of encoded bytes</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        protected long Encode(Bitmap image, byte[] source, int offset, CancellationToken token)
         {
             if (source == null)
                 throw new ArgumentNullException("source", "Source null argument");
+            if (token.IsCancellationRequested)
+                token.ThrowIfCancellationRequested();
             Point position = GetPoint(image, offset);
             int bitCount = 0;
             long byteIndex = 0;
@@ -485,11 +465,8 @@ namespace Steganography
                 {
                     if (byteIndex == source.LongLength)
                         return byteIndex;
-
                     Color color = image.GetPixel(position.X, position.Y);
-
                     byte[] argb = BitConverter.GetBytes(color.ToArgb());
-
                     for (int i = 0; i < argb.Length; i++)
                     {
                         for (int j = 0; j < 2; j++)
@@ -513,10 +490,29 @@ namespace Steganography
             return byteIndex;
         }
 
-        protected long InsertWithCancellation(Bitmap image, byte[] source, int offset, CancellationToken token, Action<int> progress)
+        /// <summary>
+        /// Encode byte array into bitmap image from offset position with cancellation and progress notifier
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="source">Byte array</param>
+        /// <param name="offset">offset</param>
+        /// <param name="token">CancellationToken</param>
+        /// <param name="progress">Progress notifier method</param>
+        /// <returns>Count of encoded bytes</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        protected long Encode(Bitmap image, byte[] source, int offset, CancellationToken token, Action<int> progress)
         {
+            //Check input params
             if (source == null)
                 throw new ArgumentNullException("source", "Source null argument");
+            if (progress == null)
+                throw new ArgumentNullException("progress", "Progress null argument");
+            //Check CancellationToken
+            if (token.IsCancellationRequested)
+                token.ThrowIfCancellationRequested();
             //Get pixel position from offset
             Point position = GetPoint(image, offset);
             //Set index for bits and index for bytes
@@ -572,19 +568,33 @@ namespace Steganography
             return byteIndex;
         }
 
-        protected byte[] ExtractWithCancellation(Bitmap image, long length, int offset, CancellationToken token)
+        /// <summary>
+        /// Decode byte array from bitmap image from offset position with cancellation
+        /// </summary>
+        /// <param name="image">Bitmap image<</param>
+        /// <param name="decodeByteCount">Count of bytes for decoding</param>
+        /// <param name="offset">offset</param>
+        /// <param name="token">CancellationToken</param>
+        /// <returns>Decoded byte array</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        protected byte[] Decode(Bitmap image, long decodeByteCount, int offset, CancellationToken token)
         {
-            if (length > image.Width * image.Height - offset)
-                throw new ArgumentOutOfRangeException("Length higher than pixel count");
+            if (decodeByteCount > image.Width * image.Height - offset || decodeByteCount <= 0)
+                throw new ArgumentOutOfRangeException("length", decodeByteCount, "Incorrect length value");
+            if (token.IsCancellationRequested)
+                token.ThrowIfCancellationRequested();
             Point position = GetPoint(image, offset);
-            byte[] stream = new byte[length];      
+            byte[] stream = new byte[decodeByteCount];
             int bitCount = 0;
             long byteIndex = 0;
             for (; position.Y < image.Height; position.Y++)
             {
                 for (; position.X < image.Width; position.X++)
                 {
-                    if (byteIndex == length)
+                    if (byteIndex == decodeByteCount)
                         return stream;
                     Color color = image.GetPixel(position.X, position.Y);
                     byte[] b = BitConverter.GetBytes(color.ToArgb());
@@ -607,14 +617,33 @@ namespace Steganography
             return stream;
         }
 
-        protected byte[] ExtractWithCancellation(Bitmap image, long length, int offset, CancellationToken token, Action<int> progress)
+        /// <summary>
+        /// Decode byte array from bitmap image from offset position with cancellation and progress notifier
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="decodeByteCount">Count of bytes for decoding</param>
+        /// <param name="offset">offset</param>
+        /// <param name="token">CancellationToken</param>
+        /// <param name="progress">Progress notifier method</param>
+        /// <returns>Decoded byte array</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        protected byte[] Decode(Bitmap image, long decodeByteCount, int offset, CancellationToken token, Action<int> progress)
         {
-            if (length > image.Width * image.Height - offset)
-                throw new ArgumentOutOfRangeException("Length higher than pixel count");
+            //Check input params
+            if (progress == null)
+                throw new ArgumentNullException("progress", "Progress null argument");
+            if (decodeByteCount > image.Width * image.Height - offset || decodeByteCount <= 0)
+                throw new ArgumentOutOfRangeException("length", decodeByteCount, "Incorrect length value");
+            //Check CancellationToken
+            if (token.IsCancellationRequested)
+                token.ThrowIfCancellationRequested();
             //Get pixel position from offset
             Point position = GetPoint(image, offset);
             //Allocate memory - all bits clear
-            byte[] stream = new byte[length];
+            byte[] stream = new byte[decodeByteCount];
             //Set index for bits and index for bytes
             int bitCount = 0;
             long byteIndex = 0;
@@ -625,7 +654,7 @@ namespace Steganography
                 for (; position.X < image.Width; position.X++)
                 {
                     //Decoding completed
-                    if (byteIndex == length)
+                    if (byteIndex == decodeByteCount)
                     {
                         progress(100);
                         return stream;

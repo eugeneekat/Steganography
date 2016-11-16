@@ -55,7 +55,6 @@ namespace Steganography
             this.token = source.Token;
             this.progressHandler = new Progress<int>(value => { this.progressBarEncode.Value = value; });
             this.progress = this.progressHandler;
-            this.lblProgress.BackColor = Color.Transparent;
         }
         
         //Encryption check/uncheck
@@ -218,12 +217,18 @@ namespace Steganography
                 string path = this.txtBoxOutputFolder.Text + '\\' + this.txtBoxOutputFileName.Text;
                 if (this.radioBtnEncode.Checked)
                 {
+                    
                     #region Encode
-                    //Prepare bmp for encoding                  
+                        
+                    if (path == this.txtBoxInputImage.Text)
+                        throw new FileLoadException("Output file full path same as encoding full file path");
+                    //Prepare bmp for encoding  
                     this.bmp = new Bitmap(Image.FromFile(this.txtBoxInputImage.Text));                     
                     if (this.radioBtnFile.Checked)
                     {
+
                         #region File encode
+
                         //Encrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
                         {
@@ -248,28 +253,38 @@ namespace Steganography
                             this.lblProgress.Text = "Encoding";
                             await this.seg.EncodeFileAsync(this.bmp, this.file, this.token, this.progress.Report);
                         }
+                        
                         #endregion
+
                     }
                     //Text
                     else
                     {
+
                         #region Text encode
+
                         //Encrypt
                         if (this.checkBoxEncrypt.Checked && this.txtBoxPassword.Text != string.Empty)
                             this.seg.EncodeText(this.bmp, this.EncryptionXorText(this.txtBoxText.Text, this.txtBoxPassword.Text));
                         //Don't encrypt
                         else
                             this.seg.EncodeText(this.bmp, this.txtBoxText.Text);
+                       
                         #endregion
+
                     }
                     //If operation wasn't cancelled - save new bmp 
                     if (!this.token.IsCancellationRequested)
                         this.bmp.Save(path);
+                    
                     #endregion
+
                 }
                 else
                 {
+
                     #region Decode
+                    
                     //File
                     if (this.txtBoxOutputFolder.Text != string.Empty)
                     {
@@ -292,7 +307,9 @@ namespace Steganography
                             outMessage = this.EncryptionXorText(outMessage, this.txtBoxPassword.Text);
                         this.txtBoxText.Text = outMessage;
                     }
+                    
                     #endregion
+
                 }
                 this.lblProgress.Text = "Completed";
             }
