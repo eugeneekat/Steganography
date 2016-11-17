@@ -77,11 +77,11 @@ namespace Steganography
             this.txtBoxText.Enabled = this.radioBtnText.Checked;
             this.txtBoxFile.Enabled = this.radioBtnFile.Checked;
             //Set progressBar for text and file input      
-            if (this.radioBtnText.Checked == true)
+            if (this.radioBtnText.Checked)
             {
                 this.txtBoxText.ReadOnly = false;
                 this.progressBarCapacity.Value = this.txtBoxText.Text.Length;
-                int maxLength = this.BmpPixelCount > (int)short.MaxValue ? (int)short.MaxValue : this.BmpPixelCount ?? 0;
+                int maxLength = this.BmpPixelCount > (int)short.MaxValue * 2 ? (int)short.MaxValue : this.BmpPixelCount / 2 ?? 0;                
                 this.progressBarCapacity.Maximum = this.txtBoxText.MaxLength = maxLength;
             }
             else
@@ -393,10 +393,10 @@ namespace Steganography
         /// <returns>Ecrypted text</returns>
         private string EncryptionXorText(string text, string password)
         {
-            byte[] encText = Encoding.Unicode.GetBytes(text);
-            byte[] encPassword = Encoding.Unicode.GetBytes(password);
+            byte[] encText = Encoding.ASCII.GetBytes(text);
+            byte[] encPassword = Encoding.ASCII.GetBytes(password);
             ByteEncryptor.Xor.Encrypt(ref encText, encPassword);
-            return Encoding.Unicode.GetString(encText);
+            return Encoding.ASCII.GetString(encText);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
