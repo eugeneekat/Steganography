@@ -19,6 +19,14 @@ namespace Steganography
 
         /*----------------Encode and decode methods----------------*/
 
+        /// <summary>
+        /// Encode text into bitmap image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="text">Text</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public virtual void EncodeText(Bitmap image, string text)
         {
             byte[] source = Encoding.Unicode.GetBytes(text);
@@ -26,16 +34,25 @@ namespace Steganography
                 throw new ArgumentOutOfRangeException("Target data size more than container size");
             //Offset position
             int position = 0;
-            //Insert marker
+            //Encode marker
             this.Encode(image, this.textMarker, position);
             position += this.textMarker.Length;
-            //Insert size
+            //Encode size
             this.Encode(image, BitConverter.GetBytes(source.Length), position);
             position += sizeof(int);
-            //Insert source
+            //Encode source
             this.Encode(image, source, position);
         }
 
+        /// <summary>
+        /// Decode text from bitmap image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <returns>Decoded text</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
         public virtual string DecodeText(Bitmap image)
         {
             //Offset position
@@ -44,13 +61,25 @@ namespace Steganography
             if (!this.Decode(image, this.textMarker.Length, position).SequenceEqual(this.textMarker))
                 throw new ArgumentException("Image doesn't have a mark");
             position += this.textMarker.Length;
-            //Get size
+            //Decode size
             int size = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
-            //Get and return message
+            //Decode and return message
             return Encoding.Unicode.GetString(this.Decode(image, size, position));
         }
 
+        /// <summary>
+        /// Encode file into bitmap image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="file">Target encoding filestream</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="EncoderFallbackException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public virtual void EncodeFile(Bitmap image, FileStream file)
         {
             //Get extenstion
@@ -63,46 +92,77 @@ namespace Steganography
             byte[] source = new byte[file.Length];
             file.Read(source, 0, source.Length);
             int position = 0;
-            //Put marker
+            //Encode marker
             this.Encode(image, this.fileMarker, position);
             position += fileMarker.Length;
-            //Put extension size
+            //Encode extension size
             this.Encode(image, BitConverter.GetBytes(extension.Length), position);
             position += sizeof(int);
-            //Put extension
+            //Encode extension
             this.Encode(image, extension, position);
             position += extension.Length;
-            //Put data size
+            //Encode data size
             this.Encode(image, BitConverter.GetBytes(source.Length), position);
             position += sizeof(int);
-            //Put data
+            //Encode data
             this.Encode(image, source, position);
         }
 
+        /// <summary>
+        /// Decode file from bitmap image
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="outputPath">Output path and file name</param>
+        /// <returns>Decoded filestream</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// <exception cref="System.Security.SecurityException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="PathTooLongException"></exception>
         public virtual FileStream DecodeFile(Bitmap image, string outputPath)
         {
             int position = 0;
             if (!this.Decode(image, this.fileMarker.Length, position).SequenceEqual(this.fileMarker))
                 throw new ArgumentException("Image doesn't have file marker");
             position += this.fileMarker.Length;
-            //Get file extension length
+            //Decode file extension length
             int fileExtensionLength = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
-            //Get fileName
+            //Decode fileName
             string fileExtension = Encoding.Unicode.GetString(this.Decode(image, fileExtensionLength, position));
             position += fileExtensionLength;
-            //Get FileSize
+            //Decode FileSize
             int fileSize = BitConverter.ToInt32(this.Decode(image, sizeof(int), position), 0);
             position += sizeof(int);
             //Create file
             FileStream fs = new FileStream(outputPath + fileExtension, FileMode.CreateNew, FileAccess.ReadWrite);
-            //Write file
+            //Decode and write file
             fs.Write(this.Decode(image, fileSize, position), 0, fileSize);
             return fs;
         }
 
         /*-------------Encode and decode async methods-------------*/
 
+        /// <summary>
+        /// Encode file into bitmap image async
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="file">Target encoding filestream</param>
+        /// <returns>Task - result of async encoding</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="EncoderFallbackException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public virtual async Task EncodeFileAsync(Bitmap image, FileStream file)
         {
             await Task.Run(async () =>
@@ -126,6 +186,21 @@ namespace Steganography
             });
         }
 
+        /// <summary>
+        /// Encode file into bitmap image async with cancellation
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="file">Target encoding filestream</param>
+        /// <param name="token">CancellationToken</param>
+        /// <returns>Task - result of async encoding</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="EncoderFallbackException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
         public virtual async Task EncodeFileAsync(Bitmap image, FileStream file, CancellationToken token)
         {
             await Task.Run(async () =>
@@ -149,6 +224,22 @@ namespace Steganography
             });
         }
 
+        /// <summary>
+        /// Encode file into bitmap image async with cancellation and progress notifier
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="file">Target encoding filestream</param>
+        /// <param name="token">CancellationToken</param>
+        /// <param name="progress">Progress notifier</param>
+        /// <returns>Task - result of async encoding</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="EncoderFallbackException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
         public virtual async Task EncodeFileAsync(Bitmap image, FileStream file, CancellationToken token, Action<int> progress)
         {
             //Start Task for encoding
@@ -182,7 +273,25 @@ namespace Steganography
             });
         }
 
-        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputFileName)
+        /// <summary>
+        /// Decode file from bitmap image async
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="outputPath">Output path and file name</param>
+        /// <returns>FileStream into task  - result from async method</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// <exception cref="System.Security.SecurityException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="PathTooLongException"></exception>
+        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputPath)
         {
             return await Task.Run(async () =>
             {
@@ -199,7 +308,7 @@ namespace Steganography
                 FileStream fs = null;
                 try
                 {
-                    fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
+                    fs = new FileStream(outputPath + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
                     await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position)), 0, fileSize);
                 }
                 catch (Exception)
@@ -215,7 +324,27 @@ namespace Steganography
             });
         }
 
-        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputFileName, CancellationToken token)
+        /// <summary>
+        /// Decode file from bitmap image async with cancellation
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="outputPath">Output path and file name</param>
+        /// <param name="token">CancellationToken</param>
+        /// <returns>FileStream into task  - result from async method</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// <exception cref="System.Security.SecurityException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="PathTooLongException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputPath, CancellationToken token)
         {
             return await Task.Run(async () =>
             {
@@ -232,7 +361,7 @@ namespace Steganography
                 FileStream fs = null;
                 try
                 {
-                    fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
+                    fs = new FileStream(outputPath + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
                     await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position, token)), 0, fileSize, token);
                 }
                 catch (Exception)
@@ -248,7 +377,28 @@ namespace Steganography
             });
         }
 
-        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputFileName, CancellationToken token, Action<int> progress)
+        /// <summary>
+        /// Decode file from bitmap image async with cancellation and progress notifier
+        /// </summary>
+        /// <param name="image">Bitmap image</param>
+        /// <param name="outputPath">Output path and file name</param>
+        /// <param name="token">CancellationToken</param>
+        /// <param name="progress">Progress notifier</param>
+        /// <returns>FileStream into task  - result from async method</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="DecoderFallbackException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// <exception cref="System.Security.SecurityException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="PathTooLongException"></exception>
+        /// <exception cref="OperationCanceledException"></exception>
+        public virtual async Task<FileStream> DecodeFileAsync(Bitmap image, string outputPath, CancellationToken token, Action<int> progress)
         {
             //Start Task for encoding
             return await Task.Run(async () =>
@@ -275,7 +425,7 @@ namespace Steganography
                 try
                 {
                     //Create file for save
-                    fs = new FileStream(outputFileName + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
+                    fs = new FileStream(outputPath + fileExtensionName, FileMode.CreateNew, FileAccess.ReadWrite);
                     //Decode data in file
                     await fs.WriteAsync(await Task.FromResult(this.Decode(image, fileSize, position, token, progress)), 0, fileSize, token);
                 }
@@ -292,10 +442,6 @@ namespace Steganography
                 return fs;
             });
         }
-
-
-
-
 
 
 
