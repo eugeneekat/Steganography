@@ -8,11 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
 using System.IO;
 using System.Threading;
 using System.Security.Cryptography;
-
 using Encryptors;
 using EncryptionExtension;
 
@@ -393,10 +391,10 @@ namespace Steganography
         /// <returns>Ecrypted text</returns>
         private string EncryptionXorText(string text, string password)
         {
-            byte[] encText = Encoding.ASCII.GetBytes(text);
-            byte[] encPassword = Encoding.ASCII.GetBytes(password);
+            byte[] encText = Encoding.Unicode.GetBytes(text);
+            byte[] encPassword = Encoding.Unicode.GetBytes(password);
             ByteEncryptor.Xor.Encrypt(ref encText, encPassword);
-            return Encoding.ASCII.GetString(encText);
+            return Encoding.Unicode.GetString(encText);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
